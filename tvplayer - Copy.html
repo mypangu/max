@@ -1294,6 +1294,72 @@
     </div>
   </div>
 
+  <!-- Inline Video Player Modal -->
+  <div class="video-modal" id="videoModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-episode-info">
+          <h3 id="modalEpisodeTitle">Episode Title</h3>
+          <div class="modal-episode-meta" id="modalEpisodeMeta">Season 1 • Episode 1</div>
+        </div>
+        <button class="close-modal-btn" id="closeModalBtn">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="video-container">
+        <video id="videoPlayer" class="video-player" controls poster="">
+          Your browser does not support the video tag.
+        </video>
+      </div>
+
+<div class="episode-navigation">
+  <button class="episode-nav-btn" id="prevEpisodeBtn">
+    <i class="fas fa-step-backward"></i>
+    <span>Prev</span>
+  </button>
+  <button class="episode-nav-btn" id="modalCastBtn" style="display: none;">
+    <i class="fas fa-cast"></i>
+    <span>Cast</span>
+  </button>
+  <button class="episode-nav-btn" id="nextEpisodeBtn">
+    <span>Next</span>
+    <i class="fas fa-step-forward"></i>
+  </button>
+</div>
+
+      <div class="controls-panel">
+        <div class="control-group">
+          <label class="control-label">Quality</label>
+          <select id="qualitySelect" class="control-select">
+            <option>Auto</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label class="control-label">Audio</label>
+          <select id="audioSelect" class="control-select">
+            <option>Default</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label class="control-label">Subtitles</label>
+          <select id="subtitleSelect" class="control-select">
+            <option value="-1">None</option>
+          </select>
+        </div>
+		<div class="control-group">
+		  <label class="control-label">Video Fit</label>
+		  <select id="videoFitSelect" class="control-select">
+			<option value="contain">Fit to Screen</option>
+			<option value="cover" selected>Zoom to Fill</option>
+			<option value="fill">Stretch</option>
+			<option value="none">Original Size</option>
+			<option value="scale-down">Scale Down</option>
+		  </select>
+		</div>
+      </div>
+    </div>
+  </div>
+
   <!-- Loading State -->
   <div class="loading" id="loadingState">
     <div class="spinner"></div>
@@ -1637,9 +1703,7 @@ if (savedSeason) {
           </button>
         `;
 
-        element.onclick = () => {
-  window.location.href = `player.html?showId=${this.showId}&episodeId=${episode.id}`;
-};
+        element.onclick = () => this.playEpisode(episode, index);
         
         return element;
       }
@@ -2192,7 +2256,8 @@ if (castBtn) {
         if (closeShareBtn) closeShareBtn.onclick = () => this.hideShareModal();
         if (copyLinkBtn) copyLinkBtn.onclick = () => this.copyShareLink();
 
-// Hero play button
+        // Hero play button
+        // Hero play button
 const playBtn = document.getElementById('playBtn');
 if (playBtn) {
   playBtn.onclick = () => {
@@ -2206,20 +2271,20 @@ if (playBtn) {
 
     if (seasonEpisodes.length > 0) {
       const firstSeasonEp = seasonEpisodes[0];
-      window.location.href = `player.html?showId=${this.showId}&episodeId=${firstSeasonEp.id}`;
+      const globalIndex = this.episodes.findIndex(ep => ep.id === firstSeasonEp.id);
+      this.playEpisode(firstSeasonEp, globalIndex);
     }
   };
 }
 
-// Hero continue watching button
-const continueBtn = document.getElementById('continueBtn');
-if (continueBtn) {
-  continueBtn.onclick = () => {
-    if (this.continueWatchingData && this.continueWatchingData.episodeId) {
-      window.location.href = `player.html?showId=${this.showId}&episodeId=${this.continueWatchingData.episodeId}`;
-    }
-  };
-}
+
+        // Hero continue watching button
+        const continueBtn = document.getElementById('continueBtn');
+        if (continueBtn) {
+          continueBtn.onclick = () => {
+            this.continueWatchingEpisode();
+          };
+        }
 
         // Modal controls
         const closeModalBtn = document.getElementById('closeModalBtn');
