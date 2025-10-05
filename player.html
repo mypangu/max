@@ -119,6 +119,7 @@
       display: flex;
       align-items: center;
       gap: 15px;
+      flex-wrap: nowrap;
     }
 
     .control-btn {
@@ -129,6 +130,7 @@
       cursor: pointer;
       padding: 5px;
       transition: transform 0.2s;
+      flex-shrink: 0;
     }
 
     .control-btn:hover {
@@ -474,7 +476,11 @@
       /* Hide skip buttons on mobile when not in fullscreen */
       #skipBackBtn,
       #skipForwardBtn {
-        display: none;
+        display: none !important;
+        width: 0;
+        padding: 0;
+        margin: 0;
+        visibility: hidden;
       }
     }
 
@@ -484,7 +490,10 @@
       .player-container:-webkit-full-screen #skipForwardBtn,
       .player-container:fullscreen #skipBackBtn,
       .player-container:fullscreen #skipForwardBtn {
-        display: inline-block;
+        display: inline-block !important;
+        width: auto;
+        padding: 5px;
+        visibility: visible;
       }
     }
   </style>
@@ -636,13 +645,6 @@
           this.setupKeyboardShortcuts();
           this.setupMobileSupport();
           this.renderEpisodesList();
-          
-          // Force layout recalculation on mobile
-          if (window.innerWidth <= 768) {
-            setTimeout(() => {
-              this.forceLayoutUpdate();
-            }, 100);
-          }
         } catch (error) {
           console.error('Init error:', error);
           alert('Failed to load episode');
@@ -1421,23 +1423,6 @@
         
         controls.classList.remove('visible');
         topControls.classList.remove('visible');
-      }
-
-      forceLayoutUpdate() {
-        // Force browser to recalculate layout
-        const controls = document.getElementById('playerControls');
-        const controlsRow = controls.querySelector('.controls-row');
-        
-        // Trigger reflow by reading layout properties
-        controlsRow.offsetHeight;
-        
-        // Toggle display to force re-render
-        controls.style.display = 'none';
-        controls.offsetHeight; // Force reflow
-        controls.style.display = '';
-        
-        // Show controls briefly to ensure visibility
-        this.showControls();
       }
 
       formatTime(seconds) {
