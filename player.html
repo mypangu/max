@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Player - Streamify</title>
   <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-  <script src="https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
   <style>
     * {
@@ -59,9 +58,7 @@
       pointer-events: none;
     }
 
-    .player-container:hover .player-controls,
-    .player-controls.show,
-    .player-controls.force-show {
+    .player-controls.visible {
       opacity: 1;
       pointer-events: all;
     }
@@ -207,6 +204,7 @@
       justify-content: space-between;
       align-items: center;
       font-size: 14px;
+      position: relative;
     }
 
     .settings-item:hover {
@@ -216,7 +214,7 @@
     .settings-submenu {
       position: absolute;
       right: 100%;
-      bottom: 0;
+      top: 0;
       background: rgba(0,0,0,0.95);
       border-radius: 8px;
       padding: 10px 0;
@@ -229,10 +227,6 @@
 
     .settings-submenu.show {
       display: block;
-    }
-
-    .settings-item {
-      position: relative;
     }
 
     /* Top Controls */
@@ -252,9 +246,7 @@
       pointer-events: none;
     }
 
-    .player-container:hover .top-controls,
-    .top-controls.show,
-    .top-controls.force-show {
+    .top-controls.visible {
       opacity: 1;
       pointer-events: all;
     }
@@ -276,48 +268,6 @@
       font-size: 24px;
       cursor: pointer;
       padding: 5px;
-    }
-
-    /* Episode Navigation Overlay */
-    .episode-nav-overlay {
-      position: absolute;
-      top: 50%;
-      transform: translateY(-50%);
-      background: rgba(0,0,0,0.8);
-      border: 2px solid rgba(255,255,255,0.3);
-      border-radius: 50%;
-      width: 60px;
-      height: 60px;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      opacity: 0;
-      transition: all 0.3s;
-      z-index: 10;
-    }
-
-    @media (min-width: 769px) {
-      .episode-nav-overlay {
-        display: flex;
-      }
-
-      .player-container:hover .episode-nav-overlay {
-        opacity: 1;
-      }
-
-      .episode-nav-overlay:hover {
-        background: rgba(229,9,20,0.9);
-        transform: translateY(-50%) scale(1.1);
-      }
-    }
-
-    .prev-episode {
-      left: 30px;
-    }
-
-    .next-episode {
-      right: 30px;
     }
 
     /* Loading Spinner */
@@ -376,68 +326,6 @@
     .center-play i {
       font-size: 32px;
       margin-left: 5px;
-    }
-
-    /* Skip Intro/Credits */
-    .skip-button {
-      position: absolute;
-      bottom: 100px;
-      right: 30px;
-      background: rgba(255,255,255,0.2);
-      border: 1px solid rgba(255,255,255,0.5);
-      color: #fff;
-      padding: 10px 20px;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 16px;
-      font-weight: 600;
-      display: none;
-      z-index: 10;
-    }
-
-    .skip-button.show {
-      display: block;
-    }
-
-    .skip-button:hover {
-      background: rgba(255,255,255,0.3);
-    }
-
-    /* Mobile Adjustments */
-    @media (max-width: 768px) {
-      .player-controls {
-        padding: 15px 20px;
-      }
-
-      .control-btn {
-        font-size: 20px;
-      }
-
-      .time-display {
-        font-size: 12px;
-      }
-
-      .episode-nav-overlay {
-        width: 50px;
-        height: 50px;
-      }
-
-      .prev-episode {
-        left: 15px;
-      }
-
-      .next-episode {
-        right: 15px;
-      }
-
-      .settings-menu {
-        right: 10px;
-        bottom: 70px;
-      }
-
-      .volume-control:hover .volume-slider {
-        width: 60px;
-      }
     }
 
     /* Episodes List */
@@ -535,12 +423,6 @@
       color: rgba(255,255,255,0.6);
     }
 
-    @media (max-width: 768px) {
-      .episodes-list-overlay {
-        width: 100%;
-      }
-    }
-
     /* Touch feedback */
     .touch-feedback {
       position: absolute;
@@ -561,21 +443,46 @@
     .touch-feedback.show {
       opacity: 1;
     }
+
+    /* Mobile Adjustments */
+    @media (max-width: 768px) {
+      .player-controls {
+        padding: 15px 20px;
+      }
+
+      .control-btn {
+        font-size: 20px;
+      }
+
+      .time-display {
+        font-size: 12px;
+      }
+
+      .settings-menu {
+        right: 10px;
+        bottom: 70px;
+      }
+
+      .volume-control:hover .volume-slider {
+        width: 60px;
+      }
+
+      .episodes-list-overlay {
+        width: 100%;
+      }
+    }
   </style>
 </head>
 <body>
   <div class="player-container" id="playerContainer">
     <video id="videoPlayer" playsinline></video>
     
-    <!-- Loading Spinner -->
     <div class="loading-spinner" id="loadingSpinner"></div>
 
-    <!-- Center Play Button -->
     <div class="center-play" id="centerPlay">
       <i class="fas fa-play"></i>
     </div>
 
-    <!-- Top Controls -->
     <div class="top-controls" id="topControls">
       <button class="back-btn" id="backBtn">
         <i class="fas fa-arrow-left"></i>
@@ -587,10 +494,6 @@
       <div></div>
     </div>
 
-    <!-- Skip Button -->
-    <button class="skip-button" id="skipButton">Skip Intro</button>
-
-    <!-- Episodes List -->
     <div class="episodes-list-overlay" id="episodesListOverlay">
       <div class="episodes-header">
         <h3>Episodes</h3>
@@ -601,21 +504,17 @@
       <div id="episodesList"></div>
     </div>
 
-    <!-- Touch Feedback -->
     <div class="touch-feedback" id="touchFeedback">
       <i class="fas fa-play"></i>
     </div>
 
-    <!-- Player Controls -->
     <div class="player-controls" id="playerControls">
-      <!-- Progress Bar -->
       <div class="progress-container" id="progressContainer">
         <div class="progress-buffer" id="progressBuffer"></div>
         <div class="progress-bar" id="progressBar"></div>
         <div class="progress-hover" id="progressHover">0:00</div>
       </div>
 
-      <!-- Control Buttons -->
       <div class="controls-row">
         <div class="controls-left">
           <button class="control-btn small" id="prevEpisodeBtn" title="Previous Episode">
@@ -656,7 +555,6 @@
       </div>
     </div>
 
-    <!-- Settings Menu -->
     <div class="settings-menu" id="settingsMenu">
       <div class="settings-item" id="speedMenu">
         Speed <span id="currentSpeed">1x</span>
@@ -677,7 +575,7 @@
   </div>
 
   <script>
-    class NetflixPlayer {
+    class StreamifyPlayer {
       constructor() {
         this.video = document.getElementById('videoPlayer');
         this.hls = null;
@@ -685,14 +583,10 @@
         this.episodes = [];
         this.showId = null;
         this.continueWatching = JSON.parse(localStorage.getItem('continueWatching') || '{}');
-        this.settings = JSON.parse(localStorage.getItem('playerSettings') || '{"defaultAudioLang":"auto","defaultQuality":"-1","defaultSubtitle":"none"}');
-        this.controlsTimeout = null;
+        this.settings = JSON.parse(localStorage.getItem('playerSettings') || '{"defaultAudioLang":"auto","defaultQuality":"-1","defaultSubtitle":"none","autoPlayNext":true}');
+        this.autoHideTimer = null;
         this.isPlaying = false;
         this.qualitySetup = false;
-        this.touchStartX = 0;
-        this.touchStartY = 0;
-        this.touchStartTime = 0;
-        this.isSeeking = false;
         this.isFullscreen = false;
         
         this.init();
@@ -714,16 +608,12 @@
           const data = await response.json();
           const show = data.find(s => s.id === this.showId);
           
-          if (!show) {
-            throw new Error('Show not found');
-          }
+          if (!show) throw new Error('Show not found');
 
           this.episodes = show.items.filter(i => i.type === 'episode').sort((a, b) => a.sequence - b.sequence);
           this.currentEpisode = this.episodes.find(ep => ep.id === episodeId);
 
-          if (!this.currentEpisode) {
-            throw new Error('Episode not found');
-          }
+          if (!this.currentEpisode) throw new Error('Episode not found');
 
           this.loadEpisode();
           this.setupEventListeners();
@@ -753,9 +643,7 @@
         if (poster) this.video.poster = poster;
 
         if (Hls.isSupported()) {
-          if (this.hls) {
-            this.hls.destroy();
-          }
+          if (this.hls) this.hls.destroy();
 
           this.hls = new Hls({
             enableWebVTT: true,
@@ -798,50 +686,10 @@
         } else if (this.video.canPlayType('application/vnd.apple.mpegurl')) {
           this.video.src = hlsUrl;
           this.video.load();
-          this.restoreContinueWatching();
           this.video.play();
         }
 
         this.updateNavigation();
-      }
-
-      renderEpisodesList() {
-        const container = document.getElementById('episodesList');
-        container.innerHTML = '';
-
-        // Get current season episodes
-        const currentSeasonNum = this.currentEpisode.container?.title?.match(/\d+/)?.[0] || '1';
-        const seasonEpisodes = this.episodes.filter(ep => {
-          const seasonNum = ep.container?.title?.match(/\d+/)?.[0] || '1';
-          return seasonNum === currentSeasonNum;
-        });
-
-        seasonEpisodes.forEach(episode => {
-          const card = document.createElement('div');
-          card.className = `episode-card ${episode.id === this.currentEpisode.id ? 'active' : ''}`;
-          
-          const thumbnail = episode.imageInfo?.find(i => i.type === 'bigpic')?.url || 
-                           'https://via.placeholder.com/120x68/333/fff?text=Episode';
-          const title = episode.title || `Episode ${episode.sequence}`;
-          const duration = this.formatTime(parseInt(episode.duration || 0));
-
-          card.innerHTML = `
-            <img class="episode-card-thumb" src="${thumbnail}" alt="${title}">
-            <div class="episode-card-info">
-              <div class="episode-card-number">Episode ${episode.sequence}</div>
-              <div class="episode-card-title">${title}</div>
-              <div class="episode-card-duration">${duration}</div>
-            </div>
-          `;
-
-          card.onclick = () => {
-            if (episode.id !== this.currentEpisode.id) {
-              window.location.href = `player.html?showId=${this.showId}&episodeId=${episode.id}`;
-            }
-          };
-
-          container.appendChild(card);
-        });
       }
 
       restoreContinueWatching() {
@@ -878,6 +726,44 @@
         }
       }
 
+      renderEpisodesList() {
+        const container = document.getElementById('episodesList');
+        container.innerHTML = '';
+
+        const currentSeasonNum = this.currentEpisode.container?.title?.match(/\d+/)?.[0] || '1';
+        const seasonEpisodes = this.episodes.filter(ep => {
+          const seasonNum = ep.container?.title?.match(/\d+/)?.[0] || '1';
+          return seasonNum === currentSeasonNum;
+        });
+
+        seasonEpisodes.forEach(episode => {
+          const card = document.createElement('div');
+          card.className = `episode-card ${episode.id === this.currentEpisode.id ? 'active' : ''}`;
+          
+          const thumbnail = episode.imageInfo?.find(i => i.type === 'bigpic')?.url || 
+                           'https://via.placeholder.com/120x68/333/fff?text=Episode';
+          const title = episode.title || `Episode ${episode.sequence}`;
+          const duration = this.formatTime(parseInt(episode.duration || 0));
+
+          card.innerHTML = `
+            <img class="episode-card-thumb" src="${thumbnail}" alt="${title}">
+            <div class="episode-card-info">
+              <div class="episode-card-number">Episode ${episode.sequence}</div>
+              <div class="episode-card-title">${title}</div>
+              <div class="episode-card-duration">${duration}</div>
+            </div>
+          `;
+
+          card.onclick = () => {
+            if (episode.id !== this.currentEpisode.id) {
+              window.location.href = `player.html?showId=${this.showId}&episodeId=${episode.id}`;
+            }
+          };
+
+          container.appendChild(card);
+        });
+      }
+
       setupQuality() {
         if (!this.hls || this.hls.levels.length <= 1) return;
 
@@ -912,8 +798,6 @@
         qualityMenu.appendChild(submenu);
         qualityMenu.onmouseenter = () => submenu.classList.add('show');
         qualityMenu.onmouseleave = () => setTimeout(() => submenu.classList.remove('show'), 200);
-        submenu.onmouseenter = () => submenu.classList.add('show');
-        submenu.onmouseleave = () => submenu.classList.remove('show');
       }
 
       applyDefaultQuality() {
@@ -937,12 +821,8 @@
 
       setupAudio() {
         const audioMenu = document.getElementById('audioMenu');
-        
-        // Remove existing submenu if any
         const existingSubmenu = audioMenu.querySelector('.settings-submenu');
-        if (existingSubmenu) {
-          existingSubmenu.remove();
-        }
+        if (existingSubmenu) existingSubmenu.remove();
 
         if (!this.hls || this.hls.audioTracks.length <= 1) {
           document.getElementById('currentAudio').textContent = 'Default';
@@ -974,8 +854,6 @@
         audioMenu.appendChild(submenu);
         audioMenu.onmouseenter = () => submenu.classList.add('show');
         audioMenu.onmouseleave = () => setTimeout(() => submenu.classList.remove('show'), 200);
-        submenu.onmouseenter = () => submenu.classList.add('show');
-        submenu.onmouseleave = () => submenu.classList.remove('show');
       }
 
       applyDefaultAudio() {
@@ -986,12 +864,10 @@
           'ko': 'Korean', 'zh': 'Chinese', 'ja': 'Japanese'
         };
 
-        // Apply default audio language from settings
         if (this.settings.defaultAudioLang && this.settings.defaultAudioLang !== 'auto') {
           const preferredLang = this.settings.defaultAudioLang;
           let selectedIndex = this.hls.audioTracks.findIndex(track => track.lang === preferredLang);
 
-          // Fallback logic for Tamil
           if (selectedIndex === -1 && preferredLang === 'ta') {
             const fallbackLangs = ['zh', 'ko', 'ja'];
             for (let lang of fallbackLangs) {
@@ -1006,14 +882,12 @@
             const langName = langMap[track.lang] || track.name || `Audio ${selectedIndex + 1}`;
             document.getElementById('currentAudio').textContent = langName;
           } else {
-            // Use first available track
             this.hls.audioTrack = 0;
             const track = this.hls.audioTracks[0];
             const langName = langMap[track.lang] || track.name || 'Audio 1';
             document.getElementById('currentAudio').textContent = langName;
           }
         } else {
-          // Auto mode - use first available
           if (this.hls.audioTracks.length > 0) {
             this.hls.audioTrack = 0;
             const track = this.hls.audioTracks[0];
@@ -1025,12 +899,8 @@
 
       setupSubtitles() {
         const subtitleMenu = document.getElementById('subtitleMenu');
-        
-        // Remove existing submenu if any
         const existingSubmenu = subtitleMenu.querySelector('.settings-submenu');
-        if (existingSubmenu) {
-          existingSubmenu.remove();
-        }
+        if (existingSubmenu) existingSubmenu.remove();
 
         const submenu = document.createElement('div');
         submenu.className = 'settings-submenu';
@@ -1064,14 +934,11 @@
         subtitleMenu.appendChild(submenu);
         subtitleMenu.onmouseenter = () => submenu.classList.add('show');
         subtitleMenu.onmouseleave = () => setTimeout(() => submenu.classList.remove('show'), 200);
-        submenu.onmouseenter = () => submenu.classList.add('show');
-        submenu.onmouseleave = () => submenu.classList.remove('show');
       }
 
       applyDefaultSubtitles() {
         if (!this.hls) return;
 
-        // Apply default subtitle setting from settings
         if (this.settings.defaultSubtitle === 'none' || !this.settings.defaultSubtitle) {
           this.hls.subtitleTrack = -1;
           document.getElementById('currentSubtitle').textContent = 'Off';
@@ -1101,7 +968,6 @@
         // Play/Pause
         document.getElementById('playPauseBtn').onclick = () => this.togglePlay();
         document.getElementById('centerPlay').onclick = () => this.togglePlay();
-        this.video.onclick = () => this.togglePlay();
 
         // Progress bar
         const progressContainer = document.getElementById('progressContainer');
@@ -1143,16 +1009,10 @@
         // Video fit
         this.setupVideoFit();
 
-        // Navigation (desktop hover only)
+        // Back button
         document.getElementById('backBtn').onclick = () => {
           window.location.href = `tvplayer.html?id=${this.showId}`;
         };
-        
-        // Remove old overlay navigation buttons since they're removed from HTML
-        // const prevOverlay = document.getElementById('prevEpisode');
-        // const nextOverlay = document.getElementById('nextEpisode');
-        // if (prevOverlay) prevOverlay.onclick = () => this.playPrevious();
-        // if (nextOverlay) nextOverlay.onclick = () => this.playNext();
 
         // Video events
         this.video.ontimeupdate = () => this.updateProgress();
@@ -1161,21 +1021,29 @@
         this.video.onended = () => this.onEnded();
         this.video.onprogress = () => this.updateBuffer();
 
-        // Auto-hide controls
-        this.playerContainer = document.getElementById('playerContainer');
+        // Show controls on interaction
+        const playerContainer = document.getElementById('playerContainer');
         
-        // Show controls initially
-        this.showControlsInitially();
-        
-        this.playerContainer.onmousemove = () => {
-          if (window.innerWidth > 768) {
-            this.showControls();
-          }
-        };
-        
-        this.playerContainer.ontouchmove = () => {
+        // Desktop: mousemove
+        playerContainer.addEventListener('mousemove', () => {
           this.showControls();
-        };
+        });
+
+        // Mobile: touchstart
+        playerContainer.addEventListener('touchstart', () => {
+          this.showControls();
+        });
+
+        // Keep controls visible when interacting with them
+        document.getElementById('playerControls').addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.showControls();
+        });
+
+        document.getElementById('topControls').addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.showControls();
+        });
 
         // Fullscreen change listener
         document.addEventListener('fullscreenchange', () => {
@@ -1210,6 +1078,7 @@
             this.video.playbackRate = speed;
             document.getElementById('currentSpeed').textContent = `${speed}x`;
             submenu.classList.remove('show');
+            document.getElementById('settingsMenu').classList.remove('show');
           };
           submenu.appendChild(option);
         });
@@ -1217,8 +1086,6 @@
         speedMenu.appendChild(submenu);
         speedMenu.onmouseenter = () => submenu.classList.add('show');
         speedMenu.onmouseleave = () => setTimeout(() => submenu.classList.remove('show'), 200);
-        submenu.onmouseenter = () => submenu.classList.add('show');
-        submenu.onmouseleave = () => submenu.classList.remove('show');
       }
 
       setupVideoFit() {
@@ -1233,7 +1100,6 @@
           'none': 'Original Size'
         };
 
-        // Set initial fit based on orientation
         this.updateVideoFitForOrientation();
 
         Object.entries(fits).forEach(([value, label]) => {
@@ -1252,17 +1118,13 @@
         fitMenu.appendChild(submenu);
         fitMenu.onmouseenter = () => submenu.classList.add('show');
         fitMenu.onmouseleave = () => setTimeout(() => submenu.classList.remove('show'), 200);
-        submenu.onmouseenter = () => submenu.classList.add('show');
-        submenu.onmouseleave = () => submenu.classList.remove('show');
       }
 
       updateVideoFitForOrientation() {
-        // In fullscreen or landscape, use cover (zoom to fill)
         if (this.isFullscreen || window.innerWidth > window.innerHeight) {
           this.video.style.objectFit = 'cover';
           document.getElementById('currentFit').textContent = 'Zoom to Fill';
         } else {
-          // In portrait mode, use contain (fit to screen)
           this.video.style.objectFit = 'contain';
           document.getElementById('currentFit').textContent = 'Fit to Screen';
         }
@@ -1272,130 +1134,43 @@
         let lastTap = 0;
         let doubleTapTimer = null;
 
-        // Touch events for seeking and play/pause
-        this.video.addEventListener('touchstart', (e) => {
-          this.touchStartX = e.touches[0].clientX;
-          this.touchStartY = e.touches[0].clientY;
-          this.touchStartTime = Date.now();
-        });
-
-        this.video.addEventListener('touchmove', (e) => {
-          if (this.isSeeking) {
-            e.preventDefault();
-            const touchX = e.touches[0].clientX;
-            const deltaX = touchX - this.touchStartX;
-            
-            // Seek based on horizontal swipe
-            if (Math.abs(deltaX) > 10) {
-              const seekAmount = deltaX / 5;
-              this.video.currentTime += seekAmount / 10;
-              this.touchStartX = touchX;
-              this.showTouchFeedback(seekAmount > 0 ? 'forward' : 'backward');
-            }
-          }
-        });
-
         this.video.addEventListener('touchend', (e) => {
-          const touchDuration = Date.now() - this.touchStartTime;
           const touchEndX = e.changedTouches[0].clientX;
           const touchEndY = e.changedTouches[0].clientY;
-          const deltaX = Math.abs(touchEndX - this.touchStartX);
-          const deltaY = Math.abs(touchEndY - this.touchStartY);
+          const now = Date.now();
+          const timeSinceLastTap = now - lastTap;
 
-          // If it was a tap (not a swipe)
-          if (touchDuration < 300 && deltaX < 10 && deltaY < 10) {
-            const now = Date.now();
-            const timeSinceLastTap = now - lastTap;
+          if (timeSinceLastTap < 300 && timeSinceLastTap > 0) {
+            // Double tap detected
+            clearTimeout(doubleTapTimer);
+            const screenWidth = window.innerWidth;
+            const tapX = touchEndX;
 
-            if (timeSinceLastTap < 300 && timeSinceLastTap > 0) {
-              // Double tap detected
-              clearTimeout(doubleTapTimer);
-              const screenWidth = window.innerWidth;
-              const tapX = touchEndX;
-
-              if (tapX < screenWidth / 3) {
-                // Left side - rewind 10s
-                this.video.currentTime -= 10;
-                this.showTouchFeedback('backward');
-                
-                // Hide controls immediately in fullscreen
-                if (this.isFullscreen && this.isPlaying) {
-                  setTimeout(() => this.hideControls(), 500);
-                }
-              } else if (tapX > (screenWidth * 2) / 3) {
-                // Right side - forward 10s
-                this.video.currentTime += 10;
-                this.showTouchFeedback('forward');
-                
-                // Hide controls immediately in fullscreen
-                if (this.isFullscreen && this.isPlaying) {
-                  setTimeout(() => this.hideControls(), 500);
-                }
-              } else {
-                // Center - play/pause
-                this.togglePlay();
-              }
-              lastTap = 0;
+            if (tapX < screenWidth / 3) {
+              // Left side - rewind 10s
+              this.video.currentTime -= 10;
+              this.showTouchFeedback('backward');
+            } else if (tapX > (screenWidth * 2) / 3) {
+              // Right side - forward 10s
+              this.video.currentTime += 10;
+              this.showTouchFeedback('forward');
             } else {
-              // Single tap
-              lastTap = now;
-              doubleTapTimer = setTimeout(() => {
-                const screenWidth = window.innerWidth;
-                const tapX = touchEndX;
-                
-                // Only center tap shows/hides controls or pauses
-                if (tapX > screenWidth / 3 && tapX < (screenWidth * 2) / 3) {
-                  if (!this.isPlaying) {
-                    // If paused, show controls
-                    this.showControls();
-                  } else {
-                    // If playing, just toggle controls visibility
-                    const controls = document.getElementById('playerControls');
-                    if (controls.classList.contains('show')) {
-                      this.hideControls();
-                    } else {
-                      this.showControls();
-                    }
-                  }
-                } else {
-                  // Left/right single tap just shows controls briefly
-                  this.showControls();
-                }
-              }, 300);
+              // Center - play/pause
+              this.togglePlay();
             }
+            lastTap = 0;
+          } else {
+            // Single tap
+            lastTap = now;
+            doubleTapTimer = setTimeout(() => {
+              this.showControls();
+            }, 300);
           }
-
-          this.isSeeking = false;
         });
 
         // Prevent context menu on long press
         this.video.addEventListener('contextmenu', (e) => {
           e.preventDefault();
-        });
-
-        // Swipe gestures for episode navigation
-        let swipeStartX = 0;
-        this.playerContainer.addEventListener('touchstart', (e) => {
-          if (e.target !== this.video) {
-            swipeStartX = e.touches[0].clientX;
-          }
-        });
-
-        this.playerContainer.addEventListener('touchend', (e) => {
-          if (e.target !== this.video) {
-            const swipeEndX = e.changedTouches[0].clientX;
-            const swipeDistance = swipeEndX - swipeStartX;
-
-            if (Math.abs(swipeDistance) > 100) {
-              if (swipeDistance > 0) {
-                // Swipe right - previous episode
-                this.playPrevious();
-              } else {
-                // Swipe left - next episode
-                this.playNext();
-              }
-            }
-          }
         });
       }
 
@@ -1477,17 +1252,26 @@
         this.isPlaying = true;
         document.getElementById('centerPlay').classList.remove('show');
         document.getElementById('playPauseBtn').innerHTML = '<i class="fas fa-pause"></i>';
+        this.showControls();
       }
 
       onPause() {
         this.isPlaying = false;
         document.getElementById('centerPlay').classList.add('show');
         document.getElementById('playPauseBtn').innerHTML = '<i class="fas fa-play"></i>';
+        this.showControls();
+        if (this.autoHideTimer) {
+          clearTimeout(this.autoHideTimer);
+        }
       }
 
       onEnded() {
         this.saveContinueWatching();
-        setTimeout(() => this.playNext(), 2000);
+        
+        // Check autoPlayNext setting
+        if (this.settings.autoPlayNext !== false) {
+          setTimeout(() => this.playNext(), 2000);
+        }
       }
 
       updateProgress() {
@@ -1533,30 +1317,24 @@
         const container = document.getElementById('playerContainer');
         
         if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-          // Enter fullscreen
           if (container.requestFullscreen) {
             container.requestFullscreen();
           } else if (container.webkitRequestFullscreen) {
             container.webkitRequestFullscreen();
           }
           
-          // Request landscape orientation on mobile
           if (screen.orientation && screen.orientation.lock) {
-            screen.orientation.lock('landscape').catch(() => {
-              console.log('Orientation lock not supported');
-            });
+            screen.orientation.lock('landscape').catch(() => {});
           }
           
           document.getElementById('fullscreenBtn').innerHTML = '<i class="fas fa-compress"></i>';
         } else {
-          // Exit fullscreen
           if (document.exitFullscreen) {
             document.exitFullscreen();
           } else if (document.webkitExitFullscreen) {
             document.webkitExitFullscreen();
           }
           
-          // Unlock orientation
           if (screen.orientation && screen.orientation.unlock) {
             screen.orientation.unlock();
           }
@@ -1590,42 +1368,36 @@
         if (nextBtn) nextBtn.disabled = currentIndex === this.episodes.length - 1;
       }
 
-      showControlsInitially() {
-        document.getElementById('playerControls').classList.add('force-show');
-        document.getElementById('topControls').classList.add('force-show');
-        
-        setTimeout(() => {
-          if (this.isPlaying) {
-            document.getElementById('playerControls').classList.remove('force-show');
-            document.getElementById('topControls').classList.remove('force-show');
-          }
-        }, 3000);
-      }
-
       showControls() {
         const controls = document.getElementById('playerControls');
         const topControls = document.getElementById('topControls');
         
-        controls.classList.add('show');
-        topControls.classList.add('show');
+        controls.classList.add('visible');
+        topControls.classList.add('visible');
         
-        clearTimeout(this.controlsTimeout);
+        if (this.autoHideTimer) {
+          clearTimeout(this.autoHideTimer);
+        }
         
-        this.controlsTimeout = setTimeout(() => {
-          if (this.isPlaying && !document.getElementById('settingsMenu').classList.contains('show') && !document.getElementById('episodesListOverlay').classList.contains('show')) {
+        if (this.isPlaying) {
+          this.autoHideTimer = setTimeout(() => {
             this.hideControls();
-          }
-        }, 3000);
+          }, 3000);
+        }
       }
 
       hideControls() {
         const controls = document.getElementById('playerControls');
         const topControls = document.getElementById('topControls');
+        const settingsMenu = document.getElementById('settingsMenu');
+        const episodesList = document.getElementById('episodesListOverlay');
         
-        if (!document.getElementById('settingsMenu').classList.contains('show') && !document.getElementById('episodesListOverlay').classList.contains('show')) {
-          controls.classList.remove('show');
-          topControls.classList.remove('show');
+        if (settingsMenu.classList.contains('show') || episodesList.classList.contains('show')) {
+          return;
         }
+        
+        controls.classList.remove('visible');
+        topControls.classList.remove('visible');
       }
 
       formatTime(seconds) {
@@ -1642,8 +1414,7 @@
       }
     }
 
-    // Initialize player
-    new NetflixPlayer();
+    new StreamifyPlayer();
   </script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-const CACHE_NAME = "0510250700"; // ✅ Increment this on each update
+const CACHE_NAME = "0510250800"; // ✅ Increment this on each update
 const ASSETS_TO_CACHE = [
   "/",
   "/index.html",
