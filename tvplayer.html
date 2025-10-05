@@ -2389,38 +2389,48 @@ if (modalCastBtn) {
                 }
               }
               break;
-            case 'f':
-            case 'F':
-			case '8':
-              if (isModalOpen) {
-                e.preventDefault();
-                const video = document.getElementById('videoPlayer');
-                if (video) {
-                  if (video.requestFullscreen) {
-                    video.requestFullscreen();
-                  } else if (video.webkitRequestFullscreen) {
-                    video.webkitRequestFullscreen();
-                  }
-                }
-              }
-              break;
-			  
-			case 'n':
-			case 'N':
-			case '9':
-			  if (isModalOpen && window.player) {
-				e.preventDefault();
-				player.playNextEpisode();
-			  }
-			  break;
-			case 'b':
-			case 'B':
-			case '7':
-			  if (isModalOpen && window.player) {
-				e.preventDefault();
-				player.playPreviousEpisode();
-			  }
-			  break;  
+case 'f':
+case 'F':
+case '8':
+  if (isModalOpen) {
+    e.preventDefault();
+    const video = document.getElementById('videoPlayer');
+    if (video) {
+      if (document.fullscreenElement || document.webkitFullscreenElement) {
+        // Exit fullscreen
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+          document.webkitExitFullscreen();
+        }
+      } else {
+        // Enter fullscreen
+        if (video.requestFullscreen) {
+          video.requestFullscreen();
+        } else if (video.webkitRequestFullscreen) {
+          video.webkitRequestFullscreen();
+        }
+      }
+    }
+  }
+  break;
+
+case 'n':
+case 'N':
+case '9':
+  if (isModalOpen && player) {
+    e.preventDefault();
+    player.playNextEpisode();
+  }
+  break;
+case 'b':
+case 'B':
+case '7':
+  if (isModalOpen && player) {
+    e.preventDefault();
+    player.playPreviousEpisode();
+  }
+  break;  
           }
         });
       }
