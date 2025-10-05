@@ -636,6 +636,13 @@
           this.setupKeyboardShortcuts();
           this.setupMobileSupport();
           this.renderEpisodesList();
+          
+          // Force layout recalculation on mobile
+          if (window.innerWidth <= 768) {
+            setTimeout(() => {
+              this.forceLayoutUpdate();
+            }, 100);
+          }
         } catch (error) {
           console.error('Init error:', error);
           alert('Failed to load episode');
@@ -1414,6 +1421,23 @@
         
         controls.classList.remove('visible');
         topControls.classList.remove('visible');
+      }
+
+      forceLayoutUpdate() {
+        // Force browser to recalculate layout
+        const controls = document.getElementById('playerControls');
+        const controlsRow = controls.querySelector('.controls-row');
+        
+        // Trigger reflow by reading layout properties
+        controlsRow.offsetHeight;
+        
+        // Toggle display to force re-render
+        controls.style.display = 'none';
+        controls.offsetHeight; // Force reflow
+        controls.style.display = '';
+        
+        // Show controls briefly to ensure visibility
+        this.showControls();
       }
 
       formatTime(seconds) {
