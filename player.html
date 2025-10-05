@@ -112,6 +112,7 @@
       align-items: center;
       justify-content: space-between;
       gap: 15px;
+      min-height: 40px;
     }
 
     .controls-left,
@@ -120,6 +121,7 @@
       align-items: center;
       gap: 15px;
       flex-wrap: nowrap;
+      min-height: 40px;
     }
 
     .control-btn {
@@ -645,6 +647,11 @@
           this.setupKeyboardShortcuts();
           this.setupMobileSupport();
           this.renderEpisodesList();
+          
+          // Show controls immediately on page load
+          setTimeout(() => {
+            this.showControls();
+          }, 100);
         } catch (error) {
           console.error('Init error:', error);
           alert('Failed to load episode');
@@ -681,6 +688,10 @@
           this.hls.on(Hls.Events.MANIFEST_PARSED, () => {
             document.getElementById('loadingSpinner').classList.remove('show');
             this.restoreContinueWatching();
+            
+            // Show controls initially before playing
+            this.showControls();
+            
             this.video.play();
           });
 
@@ -711,6 +722,10 @@
         } else if (this.video.canPlayType('application/vnd.apple.mpegurl')) {
           this.video.src = hlsUrl;
           this.video.load();
+          
+          // Show controls initially
+          this.showControls();
+          
           this.video.play();
         }
 
