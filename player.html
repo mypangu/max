@@ -115,14 +115,16 @@
       min-height: 40px;
     }
 
-    .controls-left,
-    .controls-right {
-      display: flex;
-      align-items: center;
-      gap: 15px;
-      flex-wrap: nowrap;
-      min-height: 40px;
-    }
+.controls-left,
+.controls-right {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  flex-wrap: nowrap;
+  min-height: 40px;
+  flex-shrink: 0;   /* prevent collapse */
+  min-width: 1px;   /* ensures it can't shrink to 0 */
+}
 
     .control-btn {
       background: transparent;
