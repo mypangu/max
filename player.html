@@ -470,6 +470,22 @@
       .episodes-list-overlay {
         width: 100%;
       }
+
+      /* Hide skip buttons on mobile when not in fullscreen */
+      #skipBackBtn,
+      #skipForwardBtn {
+        display: none;
+      }
+    }
+
+    /* Show skip buttons in fullscreen on mobile */
+    @media (max-width: 768px) {
+      .player-container:-webkit-full-screen #skipBackBtn,
+      .player-container:-webkit-full-screen #skipForwardBtn,
+      .player-container:fullscreen #skipBackBtn,
+      .player-container:fullscreen #skipForwardBtn {
+        display: inline-block;
+      }
     }
   </style>
 </head>
