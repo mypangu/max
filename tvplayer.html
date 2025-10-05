@@ -2356,6 +2356,7 @@ if (modalCastBtn) {
               }
               break;
             case ' ':
+			case '5':
               if (isModalOpen) {
                 e.preventDefault();
                 const video = document.getElementById('videoPlayer');
@@ -2369,6 +2370,7 @@ if (modalCastBtn) {
               }
               break;
             case 'ArrowLeft':
+			case '4':
               if (isModalOpen) {
                 e.preventDefault();
                 const video = document.getElementById('videoPlayer');
@@ -2378,6 +2380,7 @@ if (modalCastBtn) {
               }
               break;
             case 'ArrowRight':
+			case '6':
               if (isModalOpen) {
                 e.preventDefault();
                 const video = document.getElementById('videoPlayer');
@@ -2388,6 +2391,7 @@ if (modalCastBtn) {
               break;
             case 'f':
             case 'F':
+			case '8':
               if (isModalOpen) {
                 e.preventDefault();
                 const video = document.getElementById('videoPlayer');
@@ -2400,6 +2404,23 @@ if (modalCastBtn) {
                 }
               }
               break;
+			  
+			case 'n':
+			case 'N':
+			case '9':
+			  if (isModalOpen && window.player) {
+				e.preventDefault();
+				player.playNextEpisode();
+			  }
+			  break;
+			case 'b':
+			case 'B':
+			case '7':
+			  if (isModalOpen && window.player) {
+				e.preventDefault();
+				player.playPreviousEpisode();
+			  }
+			  break;  
           }
         });
       }
