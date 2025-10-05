@@ -107,13 +107,15 @@
     }
 
     /* Control Buttons */
-    .controls-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 15px;
-      min-height: 40px;
-    }
+.controls-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  min-height: 50px;   /* was 40px → give more breathing room */
+  margin-top: 10px;   /* ensure it doesn’t stick to progress bar */
+  flex-shrink: 0;     /* prevent flexbox from collapsing */
+}
 
 .controls-left,
 .controls-right {
