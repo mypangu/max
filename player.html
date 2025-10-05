@@ -1452,6 +1452,17 @@
     }
 
     new StreamifyPlayer();
+	
+	 window.addEventListener('load', () => {
+    const controls = document.getElementById('playerControls');
+    // Wait for StreamifyPlayer to call showControls()
+    setTimeout(() => {
+      // Force reflow
+      controls.style.display = 'none';
+      void controls.offsetHeight;  // trigger layout calculation
+      controls.style.display = '';
+    }, 300);
+  });
   </script>
 </body>
 </html>
