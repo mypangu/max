@@ -54,25 +54,16 @@
       background: linear-gradient(transparent, rgba(0,0,0,0.8));
       padding: 20px 30px;
       opacity: 0;
-      visibility: hidden;
-      transition: opacity 0.3s ease, visibility 0.3s ease;
+      transition: opacity 0.3s ease;
       z-index: 10;
       pointer-events: none;
     }
 
-    .player-controls.show {
+    .player-container:hover .player-controls,
+    .player-controls.show,
+    .player-controls.force-show {
       opacity: 1;
-      visibility: visible;
       pointer-events: all;
-    }
-
-    /* On desktop, show on hover */
-    @media (min-width: 769px) {
-      .player-container:hover .player-controls {
-        opacity: 1;
-        visibility: visible;
-        pointer-events: all;
-      }
     }
 
     /* Progress Bar */
@@ -256,25 +247,16 @@
       justify-content: space-between;
       align-items: center;
       opacity: 0;
-      visibility: hidden;
-      transition: opacity 0.3s ease, visibility 0.3s ease;
+      transition: opacity 0.3s ease;
       z-index: 10;
       pointer-events: none;
     }
 
-    .top-controls.show {
+    .player-container:hover .top-controls,
+    .top-controls.show,
+    .top-controls.force-show {
       opacity: 1;
-      visibility: visible;
       pointer-events: all;
-    }
-
-    /* On desktop, show on hover */
-    @media (min-width: 769px) {
-      .player-container:hover .top-controls {
-        opacity: 1;
-        visibility: visible;
-        pointer-events: all;
-      }
     }
 
     .episode-info h3 {
@@ -296,8 +278,47 @@
       padding: 5px;
     }
 
-    /* Episode Navigation Overlay - REMOVED */
-    /* No longer needed as navigation is in control bar */
+    /* Episode Navigation Overlay */
+    .episode-nav-overlay {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(0,0,0,0.8);
+      border: 2px solid rgba(255,255,255,0.3);
+      border-radius: 50%;
+      width: 60px;
+      height: 60px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      opacity: 0;
+      transition: all 0.3s;
+      z-index: 10;
+    }
+
+    @media (min-width: 769px) {
+      .episode-nav-overlay {
+        display: flex;
+      }
+
+      .player-container:hover .episode-nav-overlay {
+        opacity: 1;
+      }
+
+      .episode-nav-overlay:hover {
+        background: rgba(229,9,20,0.9);
+        transform: translateY(-50%) scale(1.1);
+      }
+    }
+
+    .prev-episode {
+      left: 30px;
+    }
+
+    .next-episode {
+      right: 30px;
+    }
 
     /* Loading Spinner */
     .loading-spinner {
@@ -564,14 +585,6 @@
         <div class="episode-meta" id="episodeMeta">Season 1 • Episode 1</div>
       </div>
       <div></div>
-    </div>
-
-    <!-- Episode Navigation -->
-    <div class="episode-nav-overlay prev-episode" id="prevEpisode">
-      <i class="fas fa-step-backward"></i>
-    </div>
-    <div class="episode-nav-overlay next-episode" id="nextEpisode">
-      <i class="fas fa-step-forward"></i>
     </div>
 
     <!-- Skip Button -->
@@ -1151,58 +1164,20 @@
         // Auto-hide controls
         this.playerContainer = document.getElementById('playerContainer');
         
-        // Show controls initially for 3 seconds
-        this.showControls();
-        setTimeout(() => {
-          if (this.isPlaying) {
-            this.hideControls();
-          }
-        }, 3000);
+        // Show controls initially
+        this.showControlsInitially();
         
-        // Desktop: show on mouse move
-        this.playerContainer.addEventListener('mousemove', () => {
+        this.playerContainer.onmousemove = () => {
           if (window.innerWidth > 768) {
             this.showControls();
           }
-        });
-
-        // Mobile: show on touch
-        this.playerContainer.addEventListener('touchstart', () => {
-          // Only show controls if user taps, not during swipes
-          this.touchInteractionStart = Date.now();
-        });
-
-        this.playerContainer.addEventListener('touchend', (e) => {
-          const touchDuration = Date.now() - this.touchInteractionStart;
-          // If it was a quick tap (not a long press or swipe)
-          if (touchDuration < 200) {
-            // Toggle controls visibility
-            const controls = document.getElementById('playerControls');
-            if (controls.classList.contains('show')) {
-              this.hideControls();
-            } else {
-              this.showControls();
-            }
-          }
-        });
+        };
+        
+        this.playerContainer.ontouchmove = () => {
+          this.showControls();
+        };
 
         // Fullscreen change listener
-        document.addEventListener('fullscreenchange', () => {
-          this.isFullscreen = !!document.fullscreenElement;
-          this.updateVideoFitForOrientation();
-        });
-
-        document.addEventListener('webkitfullscreenchange', () => {
-          this.isFullscreen = !!document.webkitFullscreenElement;
-          this.updateVideoFitForOrientation();
-        });
-
-        // Orientation change listener
-        window.addEventListener('orientationchange', () => {
-          setTimeout(() => this.updateVideoFitForOrientation(), 100);
-        });
-
-        // Save progress periodically
         document.addEventListener('fullscreenchange', () => {
           this.isFullscreen = !!document.fullscreenElement;
           this.updateVideoFitForOrientation();
@@ -1296,7 +1271,6 @@
       setupMobileSupport() {
         let lastTap = 0;
         let doubleTapTimer = null;
-        this.touchInteractionStart = 0;
 
         // Touch events for seeking and play/pause
         this.video.addEventListener('touchstart', (e) => {
@@ -1344,25 +1318,19 @@
                 this.video.currentTime -= 10;
                 this.showTouchFeedback('backward');
                 
-                // Show controls briefly, then hide
-                this.showControls();
-                setTimeout(() => {
-                  if (this.isPlaying) {
-                    this.hideControls();
-                  }
-                }, 1000);
+                // Hide controls immediately in fullscreen
+                if (this.isFullscreen && this.isPlaying) {
+                  setTimeout(() => this.hideControls(), 500);
+                }
               } else if (tapX > (screenWidth * 2) / 3) {
                 // Right side - forward 10s
                 this.video.currentTime += 10;
                 this.showTouchFeedback('forward');
                 
-                // Show controls briefly, then hide
-                this.showControls();
-                setTimeout(() => {
-                  if (this.isPlaying) {
-                    this.hideControls();
-                  }
-                }, 1000);
+                // Hide controls immediately in fullscreen
+                if (this.isFullscreen && this.isPlaying) {
+                  setTimeout(() => this.hideControls(), 500);
+                }
               } else {
                 // Center - play/pause
                 this.togglePlay();
@@ -1375,16 +1343,24 @@
                 const screenWidth = window.innerWidth;
                 const tapX = touchEndX;
                 
-                // Only center tap toggles controls
+                // Only center tap shows/hides controls or pauses
                 if (tapX > screenWidth / 3 && tapX < (screenWidth * 2) / 3) {
-                  const controls = document.getElementById('playerControls');
-                  if (controls.classList.contains('show')) {
-                    this.hideControls();
-                  } else {
+                  if (!this.isPlaying) {
+                    // If paused, show controls
                     this.showControls();
+                  } else {
+                    // If playing, just toggle controls visibility
+                    const controls = document.getElementById('playerControls');
+                    if (controls.classList.contains('show')) {
+                      this.hideControls();
+                    } else {
+                      this.showControls();
+                    }
                   }
+                } else {
+                  // Left/right single tap just shows controls briefly
+                  this.showControls();
                 }
-                // Left/right single tap does nothing
               }, 300);
             }
           }
@@ -1614,6 +1590,18 @@
         if (nextBtn) nextBtn.disabled = currentIndex === this.episodes.length - 1;
       }
 
+      showControlsInitially() {
+        document.getElementById('playerControls').classList.add('force-show');
+        document.getElementById('topControls').classList.add('force-show');
+        
+        setTimeout(() => {
+          if (this.isPlaying) {
+            document.getElementById('playerControls').classList.remove('force-show');
+            document.getElementById('topControls').classList.remove('force-show');
+          }
+        }, 3000);
+      }
+
       showControls() {
         const controls = document.getElementById('playerControls');
         const topControls = document.getElementById('topControls');
@@ -1623,11 +1611,8 @@
         
         clearTimeout(this.controlsTimeout);
         
-        // Auto-hide after 3 seconds if playing
         this.controlsTimeout = setTimeout(() => {
-          if (this.isPlaying && 
-              !document.getElementById('settingsMenu').classList.contains('show') && 
-              !document.getElementById('episodesListOverlay').classList.contains('show')) {
+          if (this.isPlaying && !document.getElementById('settingsMenu').classList.contains('show') && !document.getElementById('episodesListOverlay').classList.contains('show')) {
             this.hideControls();
           }
         }, 3000);
@@ -1637,9 +1622,7 @@
         const controls = document.getElementById('playerControls');
         const topControls = document.getElementById('topControls');
         
-        // Don't hide if menus are open
-        if (!document.getElementById('settingsMenu').classList.contains('show') && 
-            !document.getElementById('episodesListOverlay').classList.contains('show')) {
+        if (!document.getElementById('settingsMenu').classList.contains('show') && !document.getElementById('episodesListOverlay').classList.contains('show')) {
           controls.classList.remove('show');
           topControls.classList.remove('show');
         }
