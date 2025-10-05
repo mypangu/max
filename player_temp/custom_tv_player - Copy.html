@@ -1,0 +1,3107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Player - Streamify</title>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <link rel="manifest" href="/streamify/manifest.json" />
+  <link rel="icon" href="/streamify/icons/favicon.ico" />
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #000;
+      color: #ffffff;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* Header */
+    .header {
+      position: sticky;
+      top: 0;
+      background: rgba(0, 0, 0, 0.95);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      z-index: 1000;
+      padding: 1rem;
+    }
+
+    .header-content {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .back-btn {
+      background: rgba(255, 255, 255, 0.1);
+      border: none;
+      color: #fff;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+      font-size: 1.1rem;
+    }
+
+    .back-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .header-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      flex: 1;
+      text-align: center;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .share-btn {
+      background: rgba(255, 255, 255, 0.1);
+      border: none;
+      color: #fff;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+      font-size: 1.1rem;
+    }
+
+    .share-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    /* Hero Section */
+    .hero-section {
+      position: relative;
+      height: 50vh;
+      min-height: 300px;
+      overflow: hidden;
+      margin-bottom: 1rem;
+    }
+
+    .hero-bg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;	  
+      object-fit: cover;
+      object-position: center;
+      filter: brightness(0.9);
+    }
+
+    .hero-overlay {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: linear-gradient(transparent, rgba(0,0,0,0.8), #000);
+      padding: 2rem 1rem 1rem;
+    }
+
+    .hero-content h1 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      line-height: 1.2;
+    }
+
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+      font-size: 0.85rem;
+    }
+
+    .meta-item {
+      background: rgba(255, 255, 255, 0.2);
+      padding: 0.3rem 0.6rem;
+      border-radius: 12px;
+      font-size: 0.8rem;
+    }
+
+    .hero-description {
+      font-size: 0.9rem;
+      line-height: 1.4;
+      opacity: 0.9;
+      margin-bottom: 1rem;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .play-btn {
+      background: #e50914;
+      border: none;
+      color: white;
+      padding: 0.8rem 1.5rem;
+      border-radius: 25px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.3s ease;
+    }
+
+    .play-btn:hover {
+      background: #b8070f;
+      transform: translateY(-2px);
+    }
+
+    .continue-btn {
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: white;
+      padding: 0.8rem 1.5rem;
+      border-radius: 25px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.3s ease;
+      position: relative;
+    }
+
+    .continue-btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    .continue-btn .progress-indicator {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      height: 3px;
+      background: #e50914;
+      border-radius: 0 0 25px 25px;
+      transition: width 0.3s ease;
+    }
+
+    /* Container */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 1rem;
+    }
+
+    /* Episodes Section */
+    .episodes-section {
+      margin-bottom: 2rem;
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      margin-bottom: 1rem;
+    }
+
+    .section-title {
+      font-size: 1.3rem;
+      font-weight: 600;
+    }
+
+    .season-selector {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 20px;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+
+    /* Episodes List */
+    .episodes-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .episode-item {
+      display: flex;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      padding: 0.75rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border: 1px solid transparent;
+      position: relative;
+    }
+
+    .episode-item:hover, .episode-item.active {
+      background: rgba(229, 9, 20, 0.1);
+      border-color: rgba(229, 9, 20, 0.3);
+    }
+
+    .episode-item.active {
+      border-color: #e50914;
+    }
+
+    .episode-item.hidden {
+      display: none !important;
+    }
+
+    .episode-thumbnail {
+      width: 100px;
+      height: 56px;
+      border-radius: 8px;
+      object-fit: cover;
+      margin-right: 1rem;
+      flex-shrink: 0;
+    }
+
+    .episode-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .episode-number {
+      font-size: 0.85rem;
+      color: rgba(255, 255, 255, 0.7);
+      margin-bottom: 0.2rem;
+    }
+
+    .episode-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin-bottom: 0.3rem;
+      line-height: 1.3;
+    }
+
+    .episode-description {
+      font-size: 0.8rem;
+      color: rgba(255, 255, 255, 0.6);
+      line-height: 1.3;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .episode-duration {
+      font-size: 0.8rem;
+      color: rgba(255, 255, 255, 0.7);
+      margin-left: 1rem;
+      flex-shrink: 0;
+    }
+
+    .episode-play-btn {
+      position: absolute;
+      top: 50%;
+      right: 1rem;
+      transform: translateY(-50%);
+      background: rgba(229, 9, 20, 0.9);
+      border: none;
+      color: white;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: all 0.3s ease;
+    }
+
+    .episode-item:hover .episode-play-btn {
+      opacity: 1;
+    }
+
+    /* Share Modal */
+    .share-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.9);
+      z-index: 10001;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      backdrop-filter: blur(10px);
+    }
+
+    .share-modal.active {
+      display: flex;
+    }
+
+    .share-modal-content {
+      background: #1a1a1a;
+      border-radius: 16px;
+      padding: 2rem;
+      max-width: 500px;
+      width: 90%;
+      max-height: 90vh;
+      overflow-y: auto;
+      position: relative;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .share-modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .share-modal-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+
+    .close-share-btn {
+      background: rgba(255, 255, 255, 0.1);
+      border: none;
+      color: white;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+    }
+
+    .close-share-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .share-preview {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .share-preview-content {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+    }
+
+    .share-preview-image {
+      width: 120px;
+      height: 180px;
+      border-radius: 8px;
+      object-fit: cover;
+      flex-shrink: 0;
+    }
+
+    .share-preview-info {
+      flex: 1;
+    }
+
+    .share-preview-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      line-height: 1.3;
+    }
+
+    .share-preview-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .share-preview-meta .meta-item {
+      background: rgba(229, 9, 20, 0.2);
+      color: #fff;
+      padding: 0.2rem 0.5rem;
+      border-radius: 8px;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+
+    .share-preview-description {
+      font-size: 0.85rem;
+      color: rgba(255, 255, 255, 0.8);
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 4;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .share-link-section {
+      margin-bottom: 2rem;
+    }
+
+    .share-link-title {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+    }
+
+    .share-link-container {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .share-link-input {
+      flex: 1;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: white;
+      padding: 0.75rem;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-family: monospace;
+    }
+
+    .copy-link-btn {
+      background: #e50914;
+      border: none;
+      color: white;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      white-space: nowrap;
+    }
+
+    .copy-link-btn:hover {
+      background: #b8070f;
+    }
+
+    .copy-link-btn.copied {
+      background: #28a745;
+    }
+
+    .share-options {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 1rem;
+    }
+
+    .share-option {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: white;
+      padding: 1rem;
+      border-radius: 12px;
+      cursor: pointer;
+      text-decoration: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.3s ease;
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+
+    .share-option:hover {
+      background: rgba(255, 255, 255, 0.1);
+      transform: translateY(-2px);
+    }
+
+    .share-option i {
+      font-size: 1.5rem;
+    }
+
+    .share-option.whatsapp { color: #25D366; }
+    .share-option.twitter { color: #1DA1F2; }
+    .share-option.facebook { color: #1877F2; }
+    .share-option.telegram { color: #0088cc; }
+    .share-option.email { color: #EA4335; }
+
+    /* Custom Video Player Modal */
+    .video-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.95);
+      z-index: 10000;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      backdrop-filter: blur(10px);
+    }
+
+    .video-modal.active {
+      display: flex;
+    }
+
+    .modal-content {
+      position: relative;
+      width: 90%;
+      max-width: 1000px;
+      max-height: 90%;
+      background: #1a1a1a;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7);
+    }
+
+    .modal-header {
+      background: rgba(0, 0, 0, 0.8);
+      padding: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .modal-episode-info h3 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 0.2rem;
+    }
+
+    .modal-episode-meta {
+      font-size: 0.85rem;
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    .close-modal-btn {
+      background: rgba(255, 255, 255, 0.1);
+      border: none;
+      color: white;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+    }
+
+    .close-modal-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    /* Custom Video Player Container */
+    .custom-video-container {
+      position: relative;
+      background: #000;
+      width: 100%;
+      height: auto;
+    }
+
+    .video-player {
+      width: 100%;
+      height: auto;
+      max-height: 60vh;
+      display: block;
+    }
+
+    /* Custom Video Controls */
+    .custom-video-controls {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+      padding: 2rem 1rem 1rem;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+      z-index: 100;
+    }
+
+    .custom-video-container:hover .custom-video-controls,
+    .custom-video-container.show-controls .custom-video-controls,
+    .custom-video-controls.always-visible {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .controls-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .controls-row:last-child {
+      margin-bottom: 0;
+    }
+
+    /* Progress Bar */
+    .progress-container {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex: 1;
+    }
+
+    .time-display {
+      font-size: 0.85rem;
+      color: rgba(255, 255, 255, 0.9);
+      min-width: 45px;
+      text-align: center;
+    }
+
+    .progress-bar-container {
+      flex: 1;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 2px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .progress-bar:hover {
+      height: 6px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: #e50914;
+      border-radius: 2px;
+      position: relative;
+      transition: width 0.1s ease;
+    }
+
+    .progress-thumb {
+      position: absolute;
+      right: -6px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 12px;
+      height: 12px;
+      background: #e50914;
+      border-radius: 50%;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .progress-bar-container:hover .progress-thumb {
+      opacity: 1;
+    }
+
+    .buffer-bar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100%;
+      background: rgba(255, 255, 255, 0.5);
+      border-radius: 2px;
+      width: 0%;
+    }
+
+    /* Control Buttons */
+    .control-btn {
+      background: none;
+      border: none;
+      color: rgba(255, 255, 255, 0.9);
+      cursor: pointer;
+      padding: 0.5rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+      width: 40px;
+      height: 40px;
+      font-size: 1rem;
+    }
+
+    .control-btn:hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.2);
+      transform: scale(1.1);
+    }
+
+    .control-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .control-btn.large {
+      width: 50px;
+      height: 50px;
+      font-size: 1.2rem;
+    }
+
+    /* Episode Navigation Buttons */
+    .episode-nav-group {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .episode-nav-btn {
+      background: none;
+      border: none;
+      color: rgba(255, 255, 255, 0.9);
+      cursor: pointer;
+      padding: 0.5rem 0.75rem;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.3s ease;
+      font-size: 0.85rem;
+      white-space: nowrap;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .episode-nav-btn:hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.4);
+      transform: translateY(-1px);
+    }
+
+    .episode-nav-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Volume Control */
+    .volume-container {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      position: relative;
+    }
+
+    .volume-slider {
+      width: 80px;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 2px;
+      appearance: none;
+      outline: none;
+      cursor: pointer;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .volume-container:hover .volume-slider {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .volume-slider::-webkit-slider-thumb {
+      appearance: none;
+      width: 12px;
+      height: 12px;
+      background: #e50914;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+
+    .volume-slider::-moz-range-thumb {
+      width: 12px;
+      height: 12px;
+      background: #e50914;
+      border-radius: 50%;
+      cursor: pointer;
+      border: none;
+    }
+
+    /* Settings Dropdown */
+    .settings-container {
+      position: relative;
+    }
+
+    .settings-dropdown {
+      position: absolute;
+      bottom: 100%;
+      right: 0;
+      background: rgba(0, 0, 0, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      padding: 0.5rem;
+      min-width: 200px;
+      display: none;
+      z-index: 200;
+    }
+
+    .settings-dropdown.active {
+      display: block;
+    }
+
+    .setting-group {
+      margin-bottom: 0.75rem;
+    }
+
+    .setting-group:last-child {
+      margin-bottom: 0;
+    }
+
+    .setting-label {
+      display: block;
+      font-size: 0.8rem;
+      color: rgba(255, 255, 255, 0.8);
+      margin-bottom: 0.25rem;
+    }
+
+    .setting-select {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: white;
+      padding: 0.5rem;
+      border-radius: 4px;
+      font-size: 0.8rem;
+    }
+
+    .setting-select option {
+      background: #1a1a1a;
+      color: white;
+    }
+
+    /* Settings Panel */
+    .settings-panel {
+      position: fixed;
+      top: 2rem;
+      right: 2rem;
+      background: rgba(0, 0, 0, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 12px;
+      padding: 1rem;
+      min-width: 250px;
+      z-index: 1001;
+      display: none;
+    }
+
+    .settings-btn {
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      background: rgba(255, 255, 255, 0.1);
+      border: none;
+      color: white;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1002;
+      transition: all 0.3s ease;
+    }
+
+    .settings-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .control-label {
+      font-size: 0.8rem;
+      color: rgba(255, 255, 255, 0.8);
+      font-weight: 500;
+    }
+
+    .control-select {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: white;
+      padding: 0.6rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+    }
+
+    .control-select option {
+      background: #1a1a1a;
+      color: white;
+    }
+
+    /* Progress Bar */
+    .progress-bar-episode {
+      width: 100%;
+      height: 3px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-top: 0.5rem;
+    }
+
+    .progress-fill-episode {
+      height: 100%;
+      background: #e50914;
+      border-radius: 2px;
+      transition: width 0.3s ease;
+    }
+
+    /* Continue watching indicator */
+    .continue-indicator {
+      position: absolute;
+      top: 0.5rem;
+      right: 0.5rem;
+      background: rgba(229, 9, 20, 0.9);
+      color: white;
+      padding: 0.2rem 0.5rem;
+      border-radius: 10px;
+      font-size: 0.7rem;
+      font-weight: 600;
+    }
+
+    /* Season badge */
+    .season-badge {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 0.2rem 0.5rem;
+      border-radius: 10px;
+      font-size: 0.7rem;
+      margin-right: 0.5rem;
+    }
+
+    /* Loading States */
+    .loading {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 200px;
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    .spinner {
+      width: 30px;
+      height: 30px;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-top: 3px solid #e50914;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-right: 1rem;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Error state */
+    .error-message {
+      background: rgba(229, 9, 20, 0.1);
+      border: 1px solid rgba(229, 9, 20, 0.3);
+      color: #ff6b6b;
+      padding: 1rem;
+      border-radius: 8px;
+      margin: 1rem 0;
+      text-align: center;
+    }
+
+    /* Success message */
+    .success-message {
+      position: fixed;
+      top: 2rem;
+      right: 2rem;
+      background: rgba(40, 167, 69, 0.9);
+      color: white;
+      padding: 1rem 1.5rem;
+      border-radius: 8px;
+      z-index: 10002;
+      font-weight: 500;
+      transform: translateX(100%);
+      transition: transform 0.3s ease;
+      display: none;
+    }
+
+    .success-message.show {
+      transform: translateX(0);
+      display: block;
+    }
+
+    /* Fullscreen styles */
+    .custom-video-container:-webkit-full-screen .custom-video-controls,
+    .custom-video-container:fullscreen .custom-video-controls {
+      padding: 3rem 2rem 2rem;
+    }
+
+    .custom-video-container:-webkit-full-screen .control-btn,
+    .custom-video-container:fullscreen .control-btn {
+      width: 50px;
+      height: 50px;
+      font-size: 1.2rem;
+    }
+
+    .custom-video-container:-webkit-full-screen .episode-nav-btn,
+    .custom-video-container:fullscreen .episode-nav-btn {
+      padding: 0.75rem 1rem;
+      font-size: 1rem;
+    }
+
+    /* Mobile Adjustments */
+    @media (max-width: 768px) {
+      .modal-content {
+        width: 95%;
+        max-height: 95%;
+      }
+
+      .video-player {
+        max-height: 50vh;
+      }
+
+      .custom-video-controls {
+        padding: 1.5rem 0.75rem 0.75rem;
+      }
+
+      .controls-row {
+        gap: 0.5rem;
+        margin-bottom: 0.5rem;
+      }
+
+      .control-btn {
+        width: 35px;
+        height: 35px;
+        font-size: 0.9rem;
+      }
+
+      .episode-nav-btn {
+        font-size: 0.75rem;
+        padding: 0.4rem 0.6rem;
+      }
+
+      .volume-slider {
+        width: 60px;
+      }
+
+      .time-display {
+        font-size: 0.75rem;
+        min-width: 40px;
+      }
+
+      .hero-actions {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .play-btn, .continue-btn {
+        justify-content: center;
+      }
+
+      .share-modal-content {
+        padding: 1.5rem;
+      }
+
+      .share-preview-content {
+        flex-direction: column;
+        text-align: center;
+      }
+
+      .share-preview-image {
+        width: 150px;
+        height: 225px;
+        align-self: center;
+      }
+
+      .share-options {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .share-link-container {
+        flex-direction: column;
+      }
+
+      .header-title {
+        margin-right: 0;
+      }
+
+      .header-actions .share-btn {
+        margin-right: 50px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .episode-nav-btn {
+        font-size: 0.7rem;
+        padding: 0.4rem 0.5rem;
+      }
+
+      .share-options {
+        grid-template-columns: 1fr;
+      }
+
+      .controls-row {
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+
+      .progress-container {
+        order: -1;
+        width: 100%;
+        margin-bottom: 0.5rem;
+      }
+    }
+
+    /* Desktop Adjustments */
+    @media (min-width: 768px) {
+      .hero-section {
+        height: 60vh;
+        min-height: 400px;
+      }
+
+      .hero-overlay {
+        padding: 3rem 2rem 2rem;
+      }
+
+      .hero-content h1 {
+        font-size: 2.5rem;
+      }
+
+      .hero-description {
+        font-size: 1rem;
+        -webkit-line-clamp: 4;
+      }
+
+      .container {
+        padding: 0 2rem;
+      }
+
+      .episode-item {
+        padding: 1rem;
+      }
+
+      .episode-thumbnail {
+        width: 140px;
+        height: 78px;
+        margin-right: 1.5rem;
+      }
+
+      .episode-title {
+        font-size: 1rem;
+      }
+
+      .episode-description {
+        font-size: 0.9rem;
+      }
+    }
+
+    /* Loading overlay for video */
+    .video-loading {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      display: none;
+      color: white;
+      font-size: 1.1rem;
+      z-index: 150;
+    }
+
+    .video-loading.active {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    /* Buffering indicator */
+    .buffering-indicator {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      display: none;
+      z-index: 150;
+    }
+
+    .buffering-indicator.active {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <!-- Settings Button -->
+  <button class="settings-btn" id="settingsBtn">
+    <i class="fas fa-cog"></i>
+  </button>
+
+  <!-- Settings Panel -->
+  <div class="settings-panel" id="settingsPanel">
+    <h4 style="margin-bottom: 1rem;">Player Settings</h4>
+    <div class="control-group">
+      <label class="control-label">Default Quality</label>
+      <select id="defaultQuality" class="control-select">
+        <option value="auto">Auto</option>
+        <option value="1080">1080p</option>
+        <option value="720">720p</option>
+        <option value="480">480p</option>
+        <option value="360">360p</option>
+      </select>
+    </div>
+    <div class="control-group">
+      <label class="control-label">Default Audio Language</label>
+      <select id="defaultAudioLang" class="control-select">
+        <option value="auto">Auto (First Available)</option>
+        <option value="en">English</option>
+        <option value="hi">Hindi</option>
+        <option value="ta">Tamil</option>
+        <option value="te">Telugu</option>
+        <option value="ko">Korean</option>
+        <option value="ja">Japanese</option>
+        <option value="zh">Chinese</option>
+      </select>
+    </div>
+    <div class="control-group">
+      <label class="control-label">Auto Play Next Episode</label>
+      <select id="autoPlayNext" class="control-select">
+        <option value="true">Enabled</option>
+        <option value="false">Disabled</option>
+      </select>
+    </div>
+    <div class="control-group">
+      <label class="control-label">Subtitles</label>
+      <select id="defaultSubtitle" class="control-select">
+        <option value="none">None</option>
+        <option value="english">English</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-content">
+      <button onclick="goBack()" class="back-btn">
+        <i class="fas fa-arrow-left"></i>
+      </button>
+      <div class="header-title" id="headerTitle">Loading...</div>
+      <div class="header-actions">
+        <button class="share-btn" id="shareBtn">
+          <i class="fas fa-share-alt"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero-section" id="heroSection">
+    <img class="hero-bg" id="heroBg" src="" alt="">
+    <div class="hero-overlay">
+      <div class="hero-content">
+        <h1 id="showTitle">Loading...</h1>
+        <div class="hero-meta" id="showMeta"></div>
+        <p class="hero-description" id="showDescription">Loading description...</p>
+        <div class="hero-actions">
+          <button class="play-btn" id="playBtn">
+            <i class="fas fa-play"></i>
+            Play
+          </button>
+          <button class="continue-btn" id="continueBtn" style="display: none;">
+            <i class="fas fa-play-circle"></i>
+            <span id="continueBtnText">Continue Watching</span>
+            <div class="progress-indicator" id="continueProgress"></div>
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Container -->
+  <div class="container">
+    <!-- Episodes Section -->
+    <section class="episodes-section">
+      <div class="section-header">
+        <h2 class="section-title">Episodes</h2>
+        <select class="season-selector" id="seasonSelector">
+          <option value="1">Season 1</option>
+        </select>
+      </div>
+      <div class="episodes-list" id="episodesList"></div>
+    </section>
+  </div>
+
+  <!-- Share Modal -->
+  <div class="share-modal" id="shareModal">
+    <div class="share-modal-content">
+      <div class="share-modal-header">
+        <h2 class="share-modal-title">Share Show</h2>
+        <button class="close-share-btn" id="closeShareBtn">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div class="share-preview" id="sharePreview">
+        <div class="share-preview-content">
+          <img class="share-preview-image" id="sharePreviewImage" src="" alt="">
+          <div class="share-preview-info">
+            <h3 class="share-preview-title" id="sharePreviewTitle">Show Title</h3>
+            <div class="share-preview-meta" id="sharePreviewMeta">
+              <!-- Meta items will be populated by JavaScript -->
+            </div>
+            <p class="share-preview-description" id="sharePreviewDescription">
+              Show description will appear here...
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="share-link-section">
+        <h3 class="share-link-title">Share Link</h3>
+        <div class="share-link-container">
+          <input type="text" class="share-link-input" id="shareLinkInput" readonly>
+          <button class="copy-link-btn" id="copyLinkBtn">
+            <i class="fas fa-copy"></i>
+            Copy
+          </button>
+        </div>
+      </div>
+
+      <div class="share-options">
+        <a href="#" class="share-option whatsapp" id="shareWhatsApp" target="_blank">
+          <i class="fab fa-whatsapp"></i>
+          WhatsApp
+        </a>
+        <a href="#" class="share-option twitter" id="shareTwitter" target="_blank">
+          <i class="fab fa-twitter"></i>
+          Twitter
+        </a>
+        <a href="#" class="share-option facebook" id="shareFacebook" target="_blank">
+          <i class="fab fa-facebook"></i>
+          Facebook
+        </a>
+        <a href="#" class="share-option telegram" id="shareTelegram" target="_blank">
+          <i class="fab fa-telegram"></i>
+          Telegram
+        </a>
+        <a href="#" class="share-option email" id="shareEmail">
+          <i class="fas fa-envelope"></i>
+          Email
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom Video Player Modal -->
+  <div class="video-modal" id="videoModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-episode-info">
+          <h3 id="modalEpisodeTitle">Episode Title</h3>
+          <div class="modal-episode-meta" id="modalEpisodeMeta">Season 1 • Episode 1</div>
+        </div>
+        <button class="close-modal-btn" id="closeModalBtn">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      <div class="custom-video-container" id="customVideoContainer">
+        <video id="videoPlayer" class="video-player" poster="">
+          Your browser does not support the video tag.
+        </video>
+        
+        <!-- Loading Indicator -->
+        <div class="video-loading" id="videoLoading">
+          <div class="spinner"></div>
+          Loading...
+        </div>
+        
+        <!-- Buffering Indicator -->
+        <div class="buffering-indicator" id="bufferingIndicator">
+          <div class="spinner"></div>
+        </div>
+        
+        <!-- Custom Video Controls -->
+        <div class="custom-video-controls" id="customVideoControls">
+          <!-- First Row: Progress -->
+          <div class="controls-row">
+            <div class="progress-container">
+              <div class="time-display" id="currentTime">0:00</div>
+              <div class="progress-bar-container" id="progressBarContainer">
+                <div class="progress-bar" id="progressBar">
+                  <div class="buffer-bar" id="bufferBar"></div>
+                  <div class="progress-fill" id="progressFill">
+                    <div class="progress-thumb"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="time-display" id="totalTime">0:00</div>
+            </div>
+          </div>
+          
+          <!-- Second Row: Main Controls -->
+          <div class="controls-row">
+            <!-- Episode Navigation -->
+            <div class="episode-nav-group">
+              <button class="episode-nav-btn" id="prevEpisodeBtn">
+                <i class="fas fa-step-backward"></i>
+                <span>Prev</span>
+              </button>
+            </div>
+            
+            <!-- Playback Controls -->
+            <button class="control-btn" id="rewind10Btn">
+              <i class="fas fa-undo"></i>
+            </button>
+            
+            <button class="control-btn large" id="playPauseBtn">
+              <i class="fas fa-play"></i>
+            </button>
+            
+            <button class="control-btn" id="forward10Btn">
+              <i class="fas fa-redo"></i>
+            </button>
+            
+            <!-- Episode Navigation -->
+            <div class="episode-nav-group">
+              <button class="episode-nav-btn" id="nextEpisodeBtn">
+                <span>Next</span>
+                <i class="fas fa-step-forward"></i>
+              </button>
+            </div>
+            
+            <!-- Volume Control -->
+            <div class="volume-container">
+              <button class="control-btn" id="muteBtn">
+                <i class="fas fa-volume-up"></i>
+              </button>
+              <input type="range" class="volume-slider" id="volumeSlider" min="0" max="100" value="100">
+            </div>
+            
+            <!-- Settings -->
+            <div class="settings-container">
+              <button class="control-btn" id="videoSettingsBtn">
+                <i class="fas fa-cog"></i>
+              </button>
+              <div class="settings-dropdown" id="videoSettingsDropdown">
+                <div class="setting-group">
+                  <label class="setting-label">Quality</label>
+                  <select id="qualitySelect" class="setting-select">
+                    <option value="-1">Auto</option>
+                  </select>
+                </div>
+                <div class="setting-group">
+                  <label class="setting-label">Audio</label>
+                  <select id="audioSelect" class="setting-select">
+                    <option>Default</option>
+                  </select>
+                </div>
+                <div class="setting-group">
+                  <label class="setting-label">Subtitles</label>
+                  <select id="subtitleSelect" class="setting-select">
+                    <option value="-1">None</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Fullscreen -->
+            <button class="control-btn" id="fullscreenBtn">
+              <i class="fas fa-expand"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div class="loading" id="loadingState">
+    <div class="spinner"></div>
+    Loading...
+  </div>
+
+  <!-- Success Message -->
+  <div class="success-message" id="successMessage">
+    <i class="fas fa-check-circle"></i>
+    Link copied to clipboard!
+  </div>
+
+  <script>
+    class StreamingPlayer {
+      constructor() {
+        this.currentShow = null;
+        this.episodes = [];
+        this.currentEpisode = null;
+        this.currentEpisodeIndex = 0;
+        this.hls = null;
+        this.continueWatching = JSON.parse(localStorage.getItem('continueWatching') || '{}');
+        this.settings = JSON.parse(localStorage.getItem('playerSettings') || '{"defaultQuality": "auto", "defaultAudioLang": "auto", "autoPlayNext": "true", "defaultSubtitle": "none"}');
+        this.showId = null;
+        this.shareUrl = '';
+        this.isDragging = false;
+        this.controlsTimeout = null;
+        this.isFullscreen = false;
+        this.init();
+      }
+
+      async init() {
+        this.showId = new URLSearchParams(window.location.search).get('id');
+        if (!this.showId) {
+          this.showError('No show ID provided');
+          return;
+        }
+
+        try {
+          const response = await fetch('tvshows.json');
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          
+          const data = await response.json();
+          this.currentShow = data.find(s => s.id === this.showId);
+          
+          if (!this.currentShow) {
+            this.showError('Show not found');
+            return;
+          }
+
+          this.episodes = this.currentShow.items
+            .filter(i => i.type === 'episode')
+            .sort((a, b) => a.sequence - b.sequence);
+
+          if (this.episodes.length === 0) {
+            this.showError('No episodes found for this show');
+            return;
+          }
+
+          this.renderShowDetails();
+          this.renderEpisodes();
+          this.setupEventListeners();
+          this.loadSettings();
+          this.setupShareFeature();
+          this.setupCustomVideoControls();
+          this.hideLoading();
+        } catch (error) {
+          console.error('Error loading show:', error);
+          this.showError('Failed to load show data. Please try again.');
+        }
+      }
+
+      setupCustomVideoControls() {
+        const video = document.getElementById('videoPlayer');
+        const container = document.getElementById('customVideoContainer');
+        const controls = document.getElementById('customVideoControls');
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const currentTime = document.getElementById('currentTime');
+        const totalTime = document.getElementById('totalTime');
+        const progressFill = document.getElementById('progressFill');
+        const progressBar = document.getElementById('progressBar');
+        const progressContainer = document.getElementById('progressBarContainer');
+        const bufferBar = document.getElementById('bufferBar');
+        const volumeSlider = document.getElementById('volumeSlider');
+        const muteBtn = document.getElementById('muteBtn');
+        const fullscreenBtn = document.getElementById('fullscreenBtn');
+        const rewind10Btn = document.getElementById('rewind10Btn');
+        const forward10Btn = document.getElementById('forward10Btn');
+        const videoSettingsBtn = document.getElementById('videoSettingsBtn');
+        const videoSettingsDropdown = document.getElementById('videoSettingsDropdown');
+
+        // Hide native controls
+        video.controls = false;
+
+        // Play/Pause functionality
+        const togglePlayPause = () => {
+          if (video.paused) {
+            video.play();
+            playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+          } else {
+            video.pause();
+            playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+          }
+        };
+
+        playPauseBtn.addEventListener('click', togglePlayPause);
+        video.addEventListener('click', togglePlayPause);
+
+        // Time updates
+        video.addEventListener('timeupdate', () => {
+          if (!this.isDragging) {
+            const progress = (video.currentTime / video.duration) * 100;
+            progressFill.style.width = `${progress}%`;
+            currentTime.textContent = this.formatTime(video.currentTime);
+          }
+
+          // Update buffer
+          if (video.buffered.length > 0) {
+            const bufferEnd = video.buffered.end(video.buffered.length - 1);
+            const bufferProgress = (bufferEnd / video.duration) * 100;
+            bufferBar.style.width = `${bufferProgress}%`;
+          }
+        });
+
+        video.addEventListener('loadedmetadata', () => {
+          totalTime.textContent = this.formatTime(video.duration);
+        });
+
+        // Progress bar interaction
+        let progressRect;
+        const updateProgressRect = () => {
+          progressRect = progressBar.getBoundingClientRect();
+        };
+
+        const handleProgressClick = (e) => {
+          updateProgressRect();
+          const clickX = e.clientX - progressRect.left;
+          const progress = clickX / progressRect.width;
+          const newTime = progress * video.duration;
+          video.currentTime = newTime;
+        };
+
+        const handleProgressDrag = (e) => {
+          if (!this.isDragging) return;
+          updateProgressRect();
+          const clickX = e.clientX - progressRect.left;
+          const progress = Math.max(0, Math.min(1, clickX / progressRect.width));
+          const newTime = progress * video.duration;
+          progressFill.style.width = `${progress * 100}%`;
+          currentTime.textContent = this.formatTime(newTime);
+        };
+
+        progressContainer.addEventListener('mousedown', (e) => {
+          this.isDragging = true;
+          handleProgressClick(e);
+          document.addEventListener('mousemove', handleProgressDrag);
+          document.addEventListener('mouseup', () => {
+            this.isDragging = false;
+            document.removeEventListener('mousemove', handleProgressDrag);
+          }, { once: true });
+        });
+
+        progressContainer.addEventListener('click', handleProgressClick);
+
+        // Volume control
+        volumeSlider.addEventListener('input', () => {
+          video.volume = volumeSlider.value / 100;
+          this.updateVolumeIcon();
+        });
+
+        muteBtn.addEventListener('click', () => {
+          video.muted = !video.muted;
+          this.updateVolumeIcon();
+        });
+
+        // Skip controls
+        rewind10Btn.addEventListener('click', () => {
+          video.currentTime = Math.max(0, video.currentTime - 10);
+        });
+
+        forward10Btn.addEventListener('click', () => {
+          video.currentTime = Math.min(video.duration, video.currentTime + 10);
+        });
+
+        // Fullscreen
+        fullscreenBtn.addEventListener('click', () => {
+          this.toggleFullscreen();
+        });
+
+        // Settings dropdown
+        videoSettingsBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          videoSettingsDropdown.classList.toggle('active');
+        });
+
+        document.addEventListener('click', (e) => {
+          if (!videoSettingsBtn.contains(e.target) && !videoSettingsDropdown.contains(e.target)) {
+            videoSettingsDropdown.classList.remove('active');
+          }
+        });
+
+        // Controls visibility
+        let controlsTimeout;
+        const showControls = () => {
+          controls.classList.add('always-visible');
+          clearTimeout(controlsTimeout);
+          controlsTimeout = setTimeout(() => {
+            if (!video.paused && !this.isDragging) {
+              controls.classList.remove('always-visible');
+            }
+          }, 3000);
+        };
+
+        const hideControls = () => {
+          if (!video.paused && !this.isDragging) {
+            controls.classList.remove('always-visible');
+          }
+        };
+
+        container.addEventListener('mousemove', showControls);
+        container.addEventListener('mouseleave', hideControls);
+        container.addEventListener('touchstart', showControls);
+        controls.addEventListener('mouseenter', showControls);
+
+        video.addEventListener('play', () => {
+          playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+          showControls();
+        });
+
+        video.addEventListener('pause', () => {
+          playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+          controls.classList.add('always-visible');
+        });
+
+        video.addEventListener('ended', () => {
+          playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+          controls.classList.add('always-visible');
+          if (this.settings.autoPlayNext === 'true') {
+            setTimeout(() => this.playNextEpisode(), 2000);
+          }
+        });
+
+        // Loading states
+        video.addEventListener('loadstart', () => {
+          document.getElementById('videoLoading').classList.add('active');
+        });
+
+        video.addEventListener('canplay', () => {
+          document.getElementById('videoLoading').classList.remove('active');
+        });
+
+        video.addEventListener('waiting', () => {
+          document.getElementById('bufferingIndicator').classList.add('active');
+        });
+
+        video.addEventListener('playing', () => {
+          document.getElementById('bufferingIndicator').classList.remove('active');
+        });
+
+        // Fullscreen change events
+        document.addEventListener('fullscreenchange', () => {
+          this.handleFullscreenChange();
+        });
+        document.addEventListener('webkitfullscreenchange', () => {
+          this.handleFullscreenChange();
+        });
+      }
+
+      updateVolumeIcon() {
+        const video = document.getElementById('videoPlayer');
+        const muteBtn = document.getElementById('muteBtn');
+        const volumeSlider = document.getElementById('volumeSlider');
+        
+        if (video.muted || video.volume === 0) {
+          muteBtn.innerHTML = '<i class="fas fa-volume-mute"></i>';
+          volumeSlider.value = 0;
+        } else if (video.volume < 0.5) {
+          muteBtn.innerHTML = '<i class="fas fa-volume-down"></i>';
+          if (!video.muted) volumeSlider.value = video.volume * 100;
+        } else {
+          muteBtn.innerHTML = '<i class="fas fa-volume-up"></i>';
+          if (!video.muted) volumeSlider.value = video.volume * 100;
+        }
+      }
+
+      toggleFullscreen() {
+        const container = document.getElementById('customVideoContainer');
+        const fullscreenBtn = document.getElementById('fullscreenBtn');
+        
+        if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+          if (container.requestFullscreen) {
+            container.requestFullscreen();
+          } else if (container.webkitRequestFullscreen) {
+            container.webkitRequestFullscreen();
+          }
+        } else {
+          if (document.exitFullscreen) {
+            document.exitFullscreen();
+          } else if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen();
+          }
+        }
+      }
+
+      handleFullscreenChange() {
+        const fullscreenBtn = document.getElementById('fullscreenBtn');
+        const isFullscreen = document.fullscreenElement || document.webkitFullscreenElement;
+        
+        if (isFullscreen) {
+          fullscreenBtn.innerHTML = '<i class="fas fa-compress"></i>';
+          this.isFullscreen = true;
+        } else {
+          fullscreenBtn.innerHTML = '<i class="fas fa-expand"></i>';
+          this.isFullscreen = false;
+        }
+      }
+
+      formatTime(seconds) {
+        if (!seconds || seconds <= 0) return '0:00';
+        
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        const secs = Math.floor(seconds % 60);
+        
+        if (hours > 0) {
+          return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+        return `${minutes}:${secs.toString().padStart(2, '0')}`;
+      }
+
+      showError(message) {
+        const loadingState = document.getElementById('loadingState');
+        loadingState.innerHTML = `<div class="error-message"><i class="fas fa-exclamation-triangle"></i> ${message}</div>`;
+      }
+
+      renderShowDetails() {
+        const ep = this.episodes[0];
+        const container = ep?.container?.container;
+        const title = container?.title || this.currentShow.title || 'Untitled Show';
+        const description = this.currentShow.description || ep?.description || '';
+        const poster = container?.imageInfo?.find(i => i.type === 'bigpic')?.url || '';
+        const genres = this.currentShow.genres || ep?.genres || [];
+        
+        const rawRating = this.currentShow.ageRating || ep?.rating || '';
+        let ageRating = 'Not Rated';
+
+        if (rawRating) {
+          const ratingValue = parseInt(rawRating);
+          if (!isNaN(ratingValue)) {
+            ageRating = ratingValue === 18 ? 'A' : `U/A ${ratingValue}`;
+          }
+        }
+        
+        const rawYear = this.currentShow.releaseDate || ep?.releaseDate || '';
+        const year = rawYear ? new Date(rawYear).toLocaleDateString('en-GB', { 
+          day: '2-digit', 
+          month: '2-digit', 
+          year: 'numeric' 
+        }).replace(/\//g, '-') : '';
+        const languages = this.currentShow.languages || ep?.languages || [];
+        const languagesText = languages.length > 0 ? languages.join(', ') : '';
+
+        document.getElementById('headerTitle').textContent = title;
+        document.getElementById('showTitle').textContent = title;
+        document.getElementById('showDescription').textContent = description;
+        
+        if (poster) {
+          document.getElementById('heroBg').src = poster;
+        }
+
+        const metaItems = [
+          ageRating,
+          year,
+          `${this.episodes.length} Episodes`,
+          ...genres.slice(0, 2),
+          languagesText
+        ].filter(Boolean);
+
+        document.getElementById('showMeta').innerHTML = metaItems
+          .map(item => `<span class="meta-item">${item}</span>`)
+          .join('');
+
+        // Setup continue watching
+        this.setupContinueWatching();
+      }
+
+      setupShareFeature() {
+        // Generate share URL
+        this.shareUrl = `${window.location.origin}/streamify/share_pages/share-${this.showId}.html`;
+
+        // Populate share modal
+        this.populateShareModal();
+      }
+
+      populateShareModal() {
+        const ep = this.episodes[0];
+        const container = ep?.container?.container;
+        const title = container?.title || this.currentShow.title || 'Untitled Show';
+        const description = this.currentShow.description || ep?.description || '';
+        const shareImg = container?.imageInfo?.find(i => i.type === 'portrait_large')?.url || '';
+        const genres = this.currentShow.genres || ep?.genres || [];
+        const ageRating = this.currentShow.ageRating || ep?.rating || 'Not Rated';
+        const rawYear = this.currentShow.releaseDate || ep?.releaseDate || '';
+        const year = rawYear ? new Date(rawYear).getFullYear() : '';
+        const languages = this.currentShow.languages || ep?.languages || [];
+        const seasonCount = [...new Set(this.episodes.map(ep => 
+          ep.container?.title?.match(/\d+/)?.[0] || '1'
+        ))].length;
+
+        // Update share preview
+        document.getElementById('sharePreviewTitle').textContent = title;
+        document.getElementById('sharePreviewDescription').textContent = description;
+        document.getElementById('shareLinkInput').value = this.shareUrl;
+        
+        if (shareImg) {
+          document.getElementById('sharePreviewImage').src = shareImg;
+        }
+
+        // Update meta information
+        const metaItems = [
+          year && `${year}`,
+          `${seasonCount} Season${seasonCount > 1 ? 's' : ''}`,
+          `${this.episodes.length} Episodes`,
+          ageRating,
+          ...genres.slice(0, 2),
+          languages.length > 0 && languages.join(', ')
+        ].filter(Boolean);
+
+        const sharePreviewMeta = document.getElementById('sharePreviewMeta');
+        sharePreviewMeta.innerHTML = metaItems
+          .map(item => `<span class="meta-item">${item}</span>`)
+          .join('');
+
+        // Setup share links
+        this.setupShareLinks(title, description);
+      }
+
+      setupShareLinks(title, description) {
+        const shareText = `Check out "${title}" on Streamify! ${this.episodes.length} episodes of amazing content awaits. ${description.substring(0, 100)}${description.length > 100 ? '...' : ''}`;
+        const encodedText = encodeURIComponent(shareText);
+        const encodedUrl = encodeURIComponent(this.shareUrl);
+        const encodedTitle = encodeURIComponent(title);
+
+        // WhatsApp
+        document.getElementById('shareWhatsApp').href = 
+          `https://wa.me/?text=${encodedText}%20${encodedUrl}`;
+
+        // Twitter
+        document.getElementById('shareTwitter').href = 
+          `https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`;
+
+        // Facebook
+        document.getElementById('shareFacebook').href = 
+          `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}&quote=${encodedText}`;
+
+        // Telegram
+        document.getElementById('shareTelegram').href = 
+          `https://t.me/share/url?url=${encodedUrl}&text=${encodedText}`;
+
+        // Email
+        document.getElementById('shareEmail').href = 
+          `mailto:?subject=${encodedTitle} - Watch on Streamify&body=${encodedText}%0A%0A${this.shareUrl}`;
+      }
+
+      showShareModal() {
+        const modal = document.getElementById('shareModal');
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+      }
+
+      hideShareModal() {
+        const modal = document.getElementById('shareModal');
+        modal.classList.remove('active');
+        document.body.style.overflow = 'auto';
+      }
+
+      async copyShareLink() {
+        try {
+          await navigator.clipboard.writeText(this.shareUrl);
+          this.showSuccessMessage('Link copied to clipboard!');
+          
+          const copyBtn = document.getElementById('copyLinkBtn');
+          const originalText = copyBtn.innerHTML;
+          copyBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+          copyBtn.classList.add('copied');
+          
+          setTimeout(() => {
+            copyBtn.innerHTML = originalText;
+            copyBtn.classList.remove('copied');
+          }, 2000);
+        } catch (err) {
+          console.error('Failed to copy link:', err);
+          // Fallback for older browsers
+          const input = document.getElementById('shareLinkInput');
+          input.select();
+          document.execCommand('copy');
+          this.showSuccessMessage('Link copied to clipboard!');
+        }
+      }
+
+      showSuccessMessage(message) {
+        const successMsg = document.getElementById('successMessage');
+        successMsg.textContent = message;
+        successMsg.classList.add('show');
+        
+        setTimeout(() => {
+          successMsg.classList.remove('show');
+        }, 3000);
+      }
+
+      setupContinueWatching() {
+        const savedSeason = this.continueWatching[this.showId]?.seasonNum;
+        if (savedSeason) {
+          const seasonSelector = document.getElementById("seasonSelector");
+          if (seasonSelector) {
+            seasonSelector.value = savedSeason;
+          }
+        }
+
+        const continueData = this.continueWatching[this.showId];
+        const continueBtn = document.getElementById('continueBtn');
+        const continueBtnText = document.getElementById('continueBtnText');
+        const continueProgress = document.getElementById('continueProgress');
+
+        if (continueData && continueData.episodeId) {
+          const episode = this.episodes.find(ep => ep.id === continueData.episodeId);
+          if (episode) {
+            const progressPercent = Math.min(95, (continueData.currentTime / continueData.duration) * 100);
+            
+            continueBtn.style.display = 'flex';
+            
+            const seasonNum = this.continueWatching[this.showId]?.seasonNum || '1';
+            const episodeNum = this.continueWatching[this.showId]?.episodeNum || episode.sequence;
+            continueBtnText.textContent = `Continue: S${seasonNum} E${episodeNum}`;
+
+            continueProgress.style.width = `${progressPercent}%`;
+            
+            // Store reference for the click handler
+            this.continueWatchingData = continueData;
+          }
+        }
+      }
+
+      renderEpisodes() {
+        const container = document.getElementById('episodesList');
+        container.innerHTML = '';
+
+        this.episodes.forEach((episode, index) => {
+          const episodeElement = this.createEpisodeElement(episode, index);
+          container.appendChild(episodeElement);
+        });
+      }
+
+      createEpisodeElement(episode, index) {
+        const thumbnail = episode.imageInfo?.find(i => i.type === 'bigpic')?.url || 
+                         'https://via.placeholder.com/140x78/333/fff?text=Episode';
+        const title = episode.title || `Episode ${episode.sequence}`;
+        const description = episode.description || 'No description available';
+        const duration = this.formatDuration(parseInt(episode.duration || 0));
+        const seasonNum = episode.container?.title?.match(/\d+/)?.[0] || '1';
+
+        const continueData = this.continueWatching[this.showId];
+        const hasProgress = continueData && continueData.episodeId === episode.id;
+        const progressPercent = hasProgress ? Math.min(95, (continueData.currentTime / continueData.duration) * 100) : 0;
+
+        const element = document.createElement('div');
+        element.className = `episode-item ${hasProgress ? 'has-progress' : ''}`;
+        element.dataset.season = seasonNum;
+        element.dataset.episodeIndex = index;
+        element.innerHTML = `
+          <div style="position: relative;">
+            <img class="episode-thumbnail" src="${thumbnail}" alt="${title}" loading="lazy" onerror="this.src='https://via.placeholder.com/140x78/333/fff?text=Episode'">
+            ${hasProgress ? '<div class="continue-indicator">Continue</div>' : ''}
+          </div>
+          <div class="episode-info">
+            <div class="episode-number">
+              <span class="season-badge">S${seasonNum}</span>E${episode.sequence}
+            </div>
+            <div class="episode-title">${title}</div>
+            <div class="episode-description">${description}</div>
+            ${hasProgress ? `<div class="progress-bar-episode"><div class="progress-fill-episode" style="width: ${progressPercent}%"></div></div>` : ''}
+          </div>
+          <div class="episode-duration">${duration}</div>
+          <button class="episode-play-btn">
+            <i class="fas fa-play"></i>
+          </button>
+        `;
+
+        element.onclick = () => this.playEpisode(episode, index);
+        
+        return element;
+      }
+
+      playEpisode(episode, index) {
+        this.currentEpisode = episode;
+        this.currentEpisodeIndex = index;
+        
+        // Update active state
+        document.querySelectorAll('.episode-item').forEach(el => el.classList.remove('active'));
+        const activeElement = document.querySelector(`[data-episode-index="${index}"]`);
+        if (activeElement) {
+          activeElement.classList.add('active');
+        }
+
+        this.showVideoModal();
+        this.loadVideo(episode);
+        this.updateModalInfo(episode);
+        this.updateNavigationButtons();
+      }
+
+      continueWatchingEpisode() {
+        if (this.continueWatchingData && this.continueWatchingData.episodeId) {
+          const episode = this.episodes.find(ep => ep.id === this.continueWatchingData.episodeId);
+          if (episode) {
+            const episodeIndex = this.episodes.indexOf(episode);
+            this.playEpisode(episode, episodeIndex);
+            const seasonNum = this.continueWatching[this.showId]?.seasonNum;
+            const seasonSelector = document.getElementById("seasonSelector");
+            if (seasonSelector && seasonNum) {
+              seasonSelector.value = seasonNum;
+              seasonSelector.dispatchEvent(new Event("change"));
+            }
+          }
+        }
+      }
+
+      showVideoModal() {
+        const modal = document.getElementById('videoModal');
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+      }
+
+      hideVideoModal() {
+        const modal = document.getElementById('videoModal');
+        modal.classList.remove('active');
+        document.body.style.overflow = 'auto';
+        
+        // Stop video and clean up
+        const player = document.getElementById('videoPlayer');
+        if (player) {
+          player.pause();
+          player.src = '';
+        }
+        
+        // Destroy HLS
+        if (this.hls) {
+          try {
+            this.hls.destroy();
+          } catch (e) {
+            console.warn('Error destroying HLS:', e);
+          }
+          this.hls = null;
+        }
+
+        // Update continue watching UI after closing modal
+        setTimeout(() => {
+          this.updateContinueWatchingUI();
+          this.updateEpisodesUI();
+        }, 100);
+      }
+
+      loadVideo(episode) {
+        const player = document.getElementById('videoPlayer');
+        const hlsUrl = episode.stream?.hls?.high || episode.stream?.thirdParty?.hlsUrl;
+        const poster = episode.imageInfo?.find(i => i.type === 'bigpic')?.url || '';
+
+        if (!hlsUrl) {
+          alert('No stream available for this episode');
+          return;
+        }
+
+        // Destroy existing HLS
+        if (this.hls) {
+          try {
+            this.hls.destroy();
+          } catch (e) {
+            console.warn('Error destroying previous HLS:', e);
+          }
+          this.hls = null;
+        }
+
+        if (poster) {
+          player.poster = poster;
+        }
+
+        if (Hls.isSupported()) {
+          this.hls = new Hls({ 
+            enableWebVTT: true,
+            debug: false,
+            capLevelToPlayerSize: true
+          });
+          
+          this.hls.attachMedia(player);
+
+          // Clear native track elements
+          Array.from(player.querySelectorAll('track')).forEach(t => t.remove());
+
+          this.hls.loadSource(hlsUrl);
+          
+          this.hls.on(Hls.Events.MANIFEST_PARSED, () => {
+            // Restore continue watching position
+            const continueData = this.continueWatching[this.showId];
+            if (continueData && continueData.episodeId === episode.id && continueData.currentTime > 30) {
+              player.currentTime = continueData.currentTime;
+            }
+            
+            player.play().catch(e => {
+              console.warn('Autoplay failed:', e);
+            });
+            
+            this.setupQualityOptions();
+            this.applyDefaultQualitySettings();
+          });
+
+          this.hls.on(Hls.Events.AUDIO_TRACKS_UPDATED, () => {
+            this.setupAudioOptions();
+          });
+
+          this.hls.on(Hls.Events.SUBTITLE_TRACKS_UPDATED, () => {
+            this.setupSubtitleOptions();
+            this.applyDefaultSubtitleSettings();
+          });
+
+          this.hls.on(Hls.Events.ERROR, (event, data) => {
+            console.error('HLS Error:', data);
+            if (data.fatal) {
+              switch(data.type) {
+                case Hls.ErrorTypes.NETWORK_ERROR:
+                  console.log('Network error, trying to recover...');
+                  this.hls.startLoad();
+                  break;
+                case Hls.ErrorTypes.MEDIA_ERROR:
+                  console.log('Media error, trying to recover...');
+                  this.hls.recoverMediaError();
+                  break;
+                default:
+                  console.log('Fatal error, cannot recover');
+                  this.hls.destroy();
+                  break;
+              }
+            }
+          });
+
+        } else if (player.canPlayType('application/vnd.apple.mpegurl')) {
+          player.src = hlsUrl;
+          player.load();
+          
+          const continueData = this.continueWatching[this.showId];
+          if (continueData && continueData.episodeId === episode.id && continueData.currentTime > 30) {
+            player.currentTime = continueData.currentTime;
+          }
+          
+          player.play().catch(e => {
+            console.warn('Autoplay failed:', e);
+          });
+        } else {
+          alert('Your browser does not support HLS streaming');
+          return;
+        }
+
+        // Setup progress tracking
+        this.setupProgressTracking(player, episode);
+      }
+
+      setupProgressTracking(player, episode) {
+        // Remove existing listeners to prevent duplicates
+        const existingHandler = player._progressHandler;
+        if (existingHandler) {
+          player.removeEventListener('timeupdate', existingHandler);
+          player.removeEventListener('pause', existingHandler);
+          player.removeEventListener('ended', existingHandler);
+        }
+
+        const saveProgress = () => {
+          if (player.currentTime > 30 && player.duration > 0) {
+            const container = episode?.container?.container || {};
+            const portraitImg = container?.imageInfo?.find(img => img.type === 'portrait_large')?.url || '';
+            const showTitle = container?.title || this.currentShow?.title || 'Untitled Show';
+
+            // Reload latest continue watching data
+            this.continueWatching = JSON.parse(localStorage.getItem('continueWatching') || '{}');
+
+            // Auto-remove if video almost completed (e.g. 95%)
+            if (player.currentTime / player.duration >= 0.95) {
+              delete this.continueWatching[this.showId];
+            } else {
+              const seasonNum = episode.container?.title?.match(/\d+/)?.[0] || '1';
+              this.continueWatching[this.showId] = {
+                episodeId: episode.id,
+                episodeTitle: episode.title || `Episode ${episode.sequence}`,
+                episodeNum: episode.sequence,
+                seasonNum: seasonNum,
+                currentTime: player.currentTime,
+                duration: player.duration,
+                showTitle: showTitle,
+                thumbnail: portraitImg,
+                timestamp: Date.now()
+              };
+            }
+
+            localStorage.setItem('continueWatching', JSON.stringify(this.continueWatching));
+            this.continueWatchingData = this.continueWatching[this.showId];
+          }
+        };
+
+        const clearProgress = () => {
+          if (player.currentTime / player.duration > 0.95) {
+            // Reload latest data first
+            this.continueWatching = JSON.parse(localStorage.getItem('continueWatching') || '{}');
+            delete this.continueWatching[this.showId];
+            localStorage.setItem('continueWatching', JSON.stringify(this.continueWatching));
+            
+            // Clear local reference
+            this.continueWatchingData = null;
+          }
+        };
+
+        const handleEnded = () => {
+          clearProgress();
+          if (this.settings.autoPlayNext === 'true') {
+            setTimeout(() => this.playNextEpisode(), 2000);
+          }
+        };
+
+        // Store reference for cleanup
+        player._progressHandler = saveProgress;
+        player._endedHandler = handleEnded;
+
+        player.addEventListener('timeupdate', saveProgress);
+        player.addEventListener('timeupdate', clearProgress);
+        player.addEventListener('pause', saveProgress);
+        player.addEventListener('ended', handleEnded);
+      }
+
+      updateModalInfo(episode) {
+        const title = episode.title || `Episode ${episode.sequence}`;
+        const seasonNum = episode.container?.title?.match(/\d+/)?.[0] || '1';
+        const duration = this.formatDuration(parseInt(episode.duration || 0));
+
+        document.getElementById('modalEpisodeTitle').textContent = title;
+        document.getElementById('modalEpisodeMeta').textContent = `Season ${seasonNum} • Episode ${episode.sequence} • ${duration}`;
+      }
+
+      updateNavigationButtons() {
+        const prevBtn = document.getElementById('prevEpisodeBtn');
+        const nextBtn = document.getElementById('nextEpisodeBtn');
+        const currentSeason = document.getElementById("seasonSelector").value;
+        const seasonEpisodes = this.episodes.filter(ep => {
+          const seasonNum = ep.container?.title?.match(/\d+/)?.[0] || '1';
+          return seasonNum === currentSeason;
+        });
+
+        const currentEp = this.currentEpisode;
+        const currentIndex = seasonEpisodes.findIndex(ep => ep.id === currentEp.id);
+
+        if (prevBtn) prevBtn.disabled = currentIndex <= 0;
+        if (nextBtn) nextBtn.disabled = currentIndex === -1 || currentIndex >= seasonEpisodes.length - 1;
+      }
+
+      playPreviousEpisode() {
+        const currentSeason = document.getElementById("seasonSelector").value;
+        const seasonEpisodes = this.episodes.filter(ep => {
+          const seasonNum = ep.container?.title?.match(/\d+/)?.[0] || '1';
+          return seasonNum === currentSeason;
+        });
+
+        const currentEp = this.currentEpisode;
+        const currentIndex = seasonEpisodes.findIndex(ep => ep.id === currentEp.id);
+
+        if (currentIndex > 0) {
+          const prevEpisode = seasonEpisodes[currentIndex - 1];
+          this.playEpisode(prevEpisode, this.episodes.indexOf(prevEpisode));
+        }
+      }
+
+      playNextEpisode() {
+        const currentSeason = document.getElementById("seasonSelector").value;
+        const seasonEpisodes = this.episodes.filter(ep => {
+          const seasonNum = ep.container?.title?.match(/\d+/)?.[0] || '1';
+          return seasonNum === currentSeason;
+        });
+
+        const currentEp = this.currentEpisode;
+        const currentIndex = seasonEpisodes.findIndex(ep => ep.id === currentEp.id);
+
+        if (currentIndex !== -1 && currentIndex < seasonEpisodes.length - 1) {
+          const nextEpisode = seasonEpisodes[currentIndex + 1];
+          this.playEpisode(nextEpisode, this.episodes.indexOf(nextEpisode));
+        }
+      }
+
+      setupQualityOptions() {
+        const select = document.getElementById('qualitySelect');
+        if (!select) return;
+        
+        select.innerHTML = '';
+        
+        if (this.hls && this.hls.levels.length > 1) {
+          const autoOption = document.createElement('option');
+          autoOption.value = -1;
+          autoOption.textContent = 'Auto';
+          select.appendChild(autoOption);
+
+          this.hls.levels.forEach((level, i) => {
+            const option = document.createElement('option');
+            option.value = i;
+            option.textContent = `${level.height}p`;
+            select.appendChild(option);
+          });
+
+          select.onchange = () => {
+            if (this.hls) {
+              this.hls.currentLevel = parseInt(select.value);
+            }
+          };
+        } else {
+          const option = document.createElement('option');
+          option.textContent = 'Auto';
+          select.appendChild(option);
+        }
+      }
+
+      applyDefaultQualitySettings() {
+        if (!this.hls || this.hls.levels.length <= 1) return;
+
+        const select = document.getElementById('qualitySelect');
+        if (!select) return;
+
+        if (this.settings.defaultQuality === 'auto') {
+          this.hls.currentLevel = -1;
+          select.value = -1;
+          return;
+        }
+
+        // Find quality level that matches the default setting
+        const targetHeight = parseInt(this.settings.defaultQuality);
+        const levelIndex = this.hls.levels.findIndex(level => level.height === targetHeight);
+        
+        if (levelIndex !== -1) {
+          this.hls.currentLevel = levelIndex;
+          select.value = levelIndex;
+        }
+      }
+
+      setupAudioOptions() {
+        const select = document.getElementById('audioSelect');
+        if (!select) return;
+        
+        select.innerHTML = '';
+        
+        if (this.hls && this.hls.audioTracks.length > 0) {
+          const langMap = {
+            'ta': 'Tamil', 'te': 'Telugu', 'hi': 'Hindi', 'en': 'English',
+            'ko': 'Korean', 'zh': 'Chinese', 'ja': 'Japanese'
+          };
+
+          this.hls.audioTracks.forEach((track, i) => {
+            const option = document.createElement('option');
+            option.value = i;
+            option.textContent = langMap[track.lang] || track.name || `Audio ${i + 1}`;
+            select.appendChild(option);
+          });
+
+          // Set default audio language
+          if (this.settings.defaultAudioLang !== 'auto') {
+            const defaultTrack = this.hls.audioTracks.findIndex(track => 
+              track.lang === this.settings.defaultAudioLang
+            );
+            if (defaultTrack !== -1) {
+              this.hls.audioTrack = defaultTrack;
+              select.value = defaultTrack;
+            }
+          }
+
+          select.onchange = () => {
+            if (this.hls) {
+              this.hls.audioTrack = parseInt(select.value);
+            }
+          };
+        } else {
+          const option = document.createElement('option');
+          option.textContent = 'Default';
+          select.appendChild(option);
+        }
+      }
+
+      setupSubtitleOptions() {
+        const select = document.getElementById('subtitleSelect');
+        if (!select) return;
+        
+        select.innerHTML = '<option value="-1">None</option>';
+        
+        if (this.hls && this.hls.subtitleTracks.length > 0) {
+          this.hls.subtitleTracks.forEach((track, i) => {
+            const option = document.createElement('option');
+            option.value = i;
+            option.textContent = track.name || `Subtitles ${i + 1}`;
+            select.appendChild(option);
+          });
+
+          select.onchange = () => {
+            if (this.hls) {
+              this.hls.subtitleTrack = parseInt(select.value);
+            }
+          };
+        }
+      }
+
+      applyDefaultSubtitleSettings() {
+        if (!this.hls || this.hls.subtitleTracks.length === 0) return;
+
+        const select = document.getElementById('subtitleSelect');
+        if (!select) return;
+
+        if (this.settings.defaultSubtitle === 'none') {
+          this.hls.subtitleTrack = -1;
+          select.value = -1;
+          return;
+        }
+
+        if (this.settings.defaultSubtitle === 'english') {
+          const englishTrack = this.hls.subtitleTracks.findIndex(track =>
+            (track.name?.toLowerCase().includes('english') || track.lang === 'en')
+          );
+          const trackIndex = englishTrack !== -1 ? englishTrack : 0;
+          this.hls.subtitleTrack = trackIndex;
+          select.value = trackIndex;
+        }
+      }
+
+      loadSettings() {
+        const defaultQuality = document.getElementById('defaultQuality');
+        const defaultAudioLang = document.getElementById('defaultAudioLang');
+        const autoPlayNext = document.getElementById('autoPlayNext');
+        const defaultSubtitle = document.getElementById('defaultSubtitle');
+
+        if (defaultQuality) defaultQuality.value = this.settings.defaultQuality;
+        if (defaultAudioLang) defaultAudioLang.value = this.settings.defaultAudioLang;
+        if (autoPlayNext) autoPlayNext.value = this.settings.autoPlayNext;
+        if (defaultSubtitle) defaultSubtitle.value = this.settings.defaultSubtitle;
+      }
+
+      saveSettings() {
+        const defaultQuality = document.getElementById('defaultQuality');
+        const defaultAudioLang = document.getElementById('defaultAudioLang');
+        const autoPlayNext = document.getElementById('autoPlayNext');
+        const defaultSubtitle = document.getElementById('defaultSubtitle');
+
+        if (defaultQuality) this.settings.defaultQuality = defaultQuality.value;
+        if (defaultAudioLang) this.settings.defaultAudioLang = defaultAudioLang.value;
+        if (autoPlayNext) this.settings.autoPlayNext = autoPlayNext.value;
+        if (defaultSubtitle) this.settings.defaultSubtitle = defaultSubtitle.value;
+        
+        localStorage.setItem('playerSettings', JSON.stringify(this.settings));
+      }
+
+      setupEventListeners() {
+        // Settings panel
+        const settingsBtn = document.getElementById('settingsBtn');
+        const settingsPanel = document.getElementById('settingsPanel');
+        
+        if (settingsBtn && settingsPanel) {
+          settingsBtn.onclick = () => {
+            settingsPanel.style.display = settingsPanel.style.display === 'block' ? 'none' : 'block';
+          };
+        }
+
+        // Settings change handlers
+        const defaultQuality = document.getElementById('defaultQuality');
+        const defaultAudioLang = document.getElementById('defaultAudioLang');
+        const autoPlayNext = document.getElementById('autoPlayNext');
+        const defaultSubtitle = document.getElementById('defaultSubtitle');
+
+        if (defaultQuality) defaultQuality.onchange = () => this.saveSettings();
+        if (defaultAudioLang) defaultAudioLang.onchange = () => this.saveSettings();
+        if (autoPlayNext) autoPlayNext.onchange = () => this.saveSettings();
+        if (defaultSubtitle) defaultSubtitle.onchange = () => this.saveSettings();
+
+        // Share button
+        const shareBtn = document.getElementById('shareBtn');
+        if (shareBtn) {
+          shareBtn.onclick = () => this.showShareModal();
+        }
+
+        // Share modal controls
+        const closeShareBtn = document.getElementById('closeShareBtn');
+        const copyLinkBtn = document.getElementById('copyLinkBtn');
+        
+        if (closeShareBtn) closeShareBtn.onclick = () => this.hideShareModal();
+        if (copyLinkBtn) copyLinkBtn.onclick = () => this.copyShareLink();
+
+        // Hero play button
+        const playBtn = document.getElementById('playBtn');
+        if (playBtn) {
+          playBtn.onclick = () => {
+            const seasonSelector = document.getElementById("seasonSelector");
+            const selectedSeason = seasonSelector?.value || '1';
+
+            const seasonEpisodes = this.episodes.filter(ep => {
+              const seasonNum = ep.container?.title?.match(/\d+/)?.[0] || '1';
+              return seasonNum === selectedSeason;
+            });
+
+            if (seasonEpisodes.length > 0) {
+              const firstSeasonEp = seasonEpisodes[0];
+              const globalIndex = this.episodes.findIndex(ep => ep.id === firstSeasonEp.id);
+              this.playEpisode(firstSeasonEp, globalIndex);
+            }
+          };
+        }
+
+        // Hero continue watching button
+        const continueBtn = document.getElementById('continueBtn');
+        if (continueBtn) {
+          continueBtn.onclick = () => {
+            this.continueWatchingEpisode();
+          };
+        }
+
+        // Modal controls
+        const closeModalBtn = document.getElementById('closeModalBtn');
+        const prevEpisodeBtn = document.getElementById('prevEpisodeBtn');
+        const nextEpisodeBtn = document.getElementById('nextEpisodeBtn');
+
+        if (closeModalBtn) closeModalBtn.onclick = () => this.hideVideoModal();
+        if (prevEpisodeBtn) prevEpisodeBtn.onclick = () => this.playPreviousEpisode();
+        if (nextEpisodeBtn) nextEpisodeBtn.onclick = () => this.playNextEpisode();
+
+        // Season selector
+        const seasonSelector = document.getElementById("seasonSelector");
+        if (seasonSelector) {
+          seasonSelector.addEventListener("change", () => {
+            this.filterEpisodesBySeason(seasonSelector.value);
+            this.updateNavigationButtons();
+          });
+        }
+
+        // Close modal on outside click
+        const videoModal = document.getElementById('videoModal');
+        if (videoModal) {
+          videoModal.onclick = (e) => {
+            if (e.target === videoModal) {
+              this.hideVideoModal();
+            }
+          };
+        }
+
+        // Close share modal on outside click
+        const shareModal = document.getElementById('shareModal');
+        if (shareModal) {
+          shareModal.onclick = (e) => {
+            if (e.target === shareModal) {
+              this.hideShareModal();
+            }
+          };
+        }
+
+        // Close settings and share modal on outside click
+        document.addEventListener('click', (e) => {
+          if (settingsPanel && settingsBtn && 
+              !settingsPanel.contains(e.target) && 
+              !settingsBtn.contains(e.target)) {
+            settingsPanel.style.display = 'none';
+          }
+          
+          // Close share modal on outside click
+          if (shareModal && !shareModal.querySelector('.share-modal-content').contains(e.target) && 
+              !document.getElementById('shareBtn').contains(e.target)) {
+            this.hideShareModal();
+          }
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+          if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+          
+          const modal = document.getElementById('videoModal');
+          const isModalOpen = modal && modal.classList.contains('active');
+          
+          switch(e.key) {
+            case 'Escape':
+              if (isModalOpen) {
+                this.hideVideoModal();
+              } else if (document.getElementById('shareModal').classList.contains('active')) {
+                this.hideShareModal();
+              }
+              break;
+            case ' ':
+              if (isModalOpen) {
+                e.preventDefault();
+                const video = document.getElementById('videoPlayer');
+                if (video) {
+                  if (video.paused) {
+                    video.play();
+                  } else {
+                    video.pause();
+                  }
+                }
+              }
+              break;
+            case 'ArrowLeft':
+              if (isModalOpen) {
+                e.preventDefault();
+                const video = document.getElementById('videoPlayer');
+                if (video) {
+                  video.currentTime = Math.max(0, video.currentTime - 10);
+                }
+              }
+              break;
+            case 'ArrowRight':
+              if (isModalOpen) {
+                e.preventDefault();
+                const video = document.getElementById('videoPlayer');
+                if (video) {
+                  video.currentTime = Math.min(video.duration || 0, video.currentTime + 10);
+                }
+              }
+              break;
+            case 'ArrowUp':
+              if (isModalOpen) {
+                e.preventDefault();
+                const video = document.getElementById('videoPlayer');
+                const volumeSlider = document.getElementById('volumeSlider');
+                if (video && volumeSlider) {
+                  const newVolume = Math.min(1, video.volume + 0.1);
+                  video.volume = newVolume;
+                  volumeSlider.value = newVolume * 100;
+                  this.updateVolumeIcon();
+                }
+              }
+              break;
+            case 'ArrowDown':
+              if (isModalOpen) {
+                e.preventDefault();
+                const video = document.getElementById('videoPlayer');
+                const volumeSlider = document.getElementById('volumeSlider');
+                if (video && volumeSlider) {
+                  const newVolume = Math.max(0, video.volume - 0.1);
+                  video.volume = newVolume;
+                  volumeSlider.value = newVolume * 100;
+                  this.updateVolumeIcon();
+                }
+              }
+              break;
+            case 'f':
+            case 'F':
+              if (isModalOpen) {
+                e.preventDefault();
+                this.toggleFullscreen();
+              }
+              break;
+            case 'm':
+            case 'M':
+              if (isModalOpen) {
+                e.preventDefault();
+                const video = document.getElementById('videoPlayer');
+                if (video) {
+                  video.muted = !video.muted;
+                  this.updateVolumeIcon();
+                }
+              }
+              break;
+          }
+        });
+      }
+
+      filterEpisodesBySeason(season) {
+        const episodeCards = document.querySelectorAll(".episode-item");
+        episodeCards.forEach(card => {
+          card.classList.toggle("hidden", card.getAttribute("data-season") !== season);
+        });
+      }
+
+      formatDuration(seconds) {
+        if (!seconds || seconds <= 0) return '0:00';
+        
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        const secs = seconds % 60;
+        
+        if (hours > 0) {
+          return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+        return `${minutes}:${secs.toString().padStart(2, '0')}`;
+      }
+
+      updateContinueWatchingUI() {
+        // Reload continue watching data from localStorage
+        this.continueWatching = JSON.parse(localStorage.getItem('continueWatching') || '{}');
+        
+        const continueData = this.continueWatching[this.showId];
+        const continueBtn = document.getElementById('continueBtn');
+        const continueBtnText = document.getElementById('continueBtnText');
+        const continueProgress = document.getElementById('continueProgress');
+
+        if (continueData && continueData.episodeId) {
+          const episode = this.episodes.find(ep => ep.id === continueData.episodeId);
+          if (episode) {
+            const progressPercent = Math.min(95, (continueData.currentTime / continueData.duration) * 100);
+            const seasonNum = continueData.seasonNum || episode.container?.title?.match(/\d+/)?.[0] || '1';
+            const episodeNum = continueData.episodeNum || episode.sequence || '1';
+            continueBtnText.textContent = `Continue: S${seasonNum} E${episodeNum}`;
+            
+            continueBtn.style.display = 'flex';
+            continueProgress.style.width = `${progressPercent}%`;
+            
+            // Update reference
+            this.continueWatchingData = continueData;
+          }
+        } else {
+          // No continue watching data - hide button
+          continueBtn.style.display = 'none';
+          this.continueWatchingData = null;
+        }
+      }
+
+      updateEpisodesUI() {
+        // Reload continue watching data
+        this.continueWatching = JSON.parse(localStorage.getItem('continueWatching') || '{}');
+        
+        // Update all episode items to reflect current progress
+        document.querySelectorAll('.episode-item').forEach((element, index) => {
+          const episode = this.episodes[index];
+          if (!episode) return;
+
+          const continueData = this.continueWatching[this.showId];
+          const hasProgress = continueData && continueData.episodeId === episode.id;
+          const progressPercent = hasProgress ? Math.min(95, (continueData.currentTime / continueData.duration) * 100) : 0;
+
+          // Update class
+          if (hasProgress) {
+            element.classList.add('has-progress');
+          } else {
+            element.classList.remove('has-progress');
+          }
+
+          // Update continue indicator
+          const existingIndicator = element.querySelector('.continue-indicator');
+          const thumbnailContainer = element.querySelector('div[style*="position: relative"]');
+          
+          if (hasProgress && !existingIndicator && thumbnailContainer) {
+            const indicator = document.createElement('div');
+            indicator.className = 'continue-indicator';
+            indicator.textContent = 'Continue';
+            thumbnailContainer.appendChild(indicator);
+          } else if (!hasProgress && existingIndicator) {
+            existingIndicator.remove();
+          }
+
+          // Update progress bar
+          const episodeInfo = element.querySelector('.episode-info');
+          const existingProgressBar = element.querySelector('.progress-bar-episode');
+          
+          if (hasProgress && !existingProgressBar) {
+            const progressBar = document.createElement('div');
+            progressBar.className = 'progress-bar-episode';
+            progressBar.innerHTML = `<div class="progress-fill-episode" style="width: ${progressPercent}%"></div>`;
+            episodeInfo.appendChild(progressBar);
+          } else if (hasProgress && existingProgressBar) {
+            const progressFill = existingProgressBar.querySelector('.progress-fill-episode');
+            if (progressFill) {
+              progressFill.style.width = `${progressPercent}%`;
+            }
+          } else if (!hasProgress && existingProgressBar) {
+            existingProgressBar.remove();
+          }
+        });
+      }
+
+      hideLoading() {
+        const loadingState = document.getElementById('loadingState');
+        if (loadingState) {
+          loadingState.style.display = 'none';
+        }
+      }
+    }
+
+    // Global functions
+    function goBack() {
+      const basePath = window.location.hostname === "localhost" ? "" : "/streamify";
+      window.location.href = `${basePath}/tvshows.html`;
+    }
+
+    // Initialize the player
+    let player;
+    try {
+      player = new StreamingPlayer();
+    } catch (error) {
+      console.error('Failed to initialize player:', error);
+      document.getElementById('loadingState').innerHTML = 
+        '<div class="error-message">Failed to initialize player. Please refresh the page.</div>';
+    }
+
+    // Season selector functionality
+    document.addEventListener("DOMContentLoaded", () => {
+      const seasonSelector = document.getElementById("seasonSelector");
+      const episodesList = document.getElementById("episodesList");
+
+      function updateSeasonOptions() {
+        const episodeCards = episodesList.querySelectorAll(".episode-item");
+        const seasons = new Set();
+
+        episodeCards.forEach(card => {
+          const season = card.getAttribute("data-season");
+          if (season) seasons.add(season);
+        });
+
+        const sortedSeasons = Array.from(seasons).sort();
+        seasonSelector.innerHTML = ''; // clear old options
+
+        sortedSeasons.forEach(season => {
+          const option = document.createElement("option");
+          option.value = season;
+          option.textContent = `Season ${season}`;
+          seasonSelector.appendChild(option);
+        });
+      }
+
+      function filterEpisodesBySeason(season) {
+        const episodeCards = episodesList.querySelectorAll(".episode-item");
+        episodeCards.forEach(card => {
+          card.classList.toggle("hidden", card.getAttribute("data-season") !== season);
+        });
+      }
+
+      seasonSelector.addEventListener("change", () => {
+        filterEpisodesBySeason(seasonSelector.value);
+        if (player) {
+          player.updateNavigationButtons();
+        }
+      });
+
+      const observer = new MutationObserver(() => {
+        updateSeasonOptions();
+        const currentSeason = seasonSelector.value || seasonSelector.options[0]?.value || "1";
+        filterEpisodesBySeason(currentSeason);
+      });
+
+      observer.observe(episodesList, { childList: true });
+    });
+
+    // Handle page visibility changes and focus events for auto-update
+    document.addEventListener('visibilitychange', () => {
+      const video = document.getElementById('videoPlayer');
+      if (video && document.hidden && !video.paused) {
+        video.pause();
+      }
+      
+      // Update UI when page becomes visible again
+      if (!document.hidden && player) {
+        player.updateContinueWatchingUI();
+        player.updateEpisodesUI();
+      }
+    });
+
+    // Update UI when window regains focus
+    window.addEventListener('focus', () => {
+      if (player) {
+        player.updateContinueWatchingUI();
+        player.updateEpisodesUI();
+      }
+    });
+
+    // Listen for localStorage changes from other tabs/windows
+    window.addEventListener('storage', (e) => {
+      if (e.key === 'continueWatching' && player) {
+        player.updateContinueWatchingUI();
+        player.updateEpisodesUI();
+      }
+    });
+
+    // Touch gestures for episode navigation
+    let touchStartX = 0;
+    let touchEndX = 0;
+
+    const videoModal = document.getElementById('videoModal');
+    if (videoModal) {
+      videoModal.addEventListener('touchstart', e => {
+        touchStartX = e.changedTouches[0].screenX;
+      });
+
+      videoModal.addEventListener('touchend', e => {
+        touchEndX = e.changedTouches[0].screenX;
+        handleSwipe();
+      });
+    }
+
+    function handleSwipe() {
+      const swipeThreshold = 100;
+      const diff = touchStartX - touchEndX;
+      
+      if (Math.abs(diff) > swipeThreshold && player) {
+        if (diff > 0) {
+          // Swipe left - next episode
+          player.playNextEpisode();
+        } else {
+          // Swipe right - previous episode
+          player.playPreviousEpisode();
+        }
+      }
+    }
+
+    // Memory cleanup
+    window.addEventListener('beforeunload', () => {
+      if (player && player.hls) {
+        try {
+          player.hls.destroy();
+        } catch (e) {
+          console.warn('Error during cleanup:', e);
+        }
+      }
+    });
+
+    // Prevent context menu on video
+    const videoPlayer = document.getElementById('videoPlayer');
+    if (videoPlayer) {
+      videoPlayer.addEventListener('contextmenu', e => {
+        e.preventDefault();
+      });
+    }
+
+    // Service Worker registration
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/streamify/service-worker.js', {
+          scope: '/streamify/'
+        })
+        .then((registration) => {
+          console.log('SW registered: ', registration);
+          
+          // Check for updates every 30 seconds
+          setInterval(() => {
+            registration.update();
+          }, 30000);
+          
+          // Handle service worker updates
+          registration.addEventListener('updatefound', () => {
+            const newWorker = registration.installing;
+            if (newWorker) {
+              newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  // New content is available, prompt user to refresh
+                  if (confirm('New version available! Refresh to update?')) {
+                    newWorker.postMessage({ type: 'SKIP_WAITING' });
+                    window.location.reload();
+                  }
+                }
+              });
+            }
+          });
+        })
+        .catch((registrationError) => {
+          console.log('SW registration failed: ', registrationError);
+        });
+      });
+
+      // Listen for service worker controller changes
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        window.location.reload();
+      });
+    }
+  </script>
+  
+</body>
+</html>
+      

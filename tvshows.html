@@ -1,0 +1,1846 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Streamify - Your Entertainment Hub</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" href="/icons/favicon.ico" />  
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #0a0a0a;
+      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      overflow-x: hidden;
+      padding-bottom: 80px; /* Space for bottom nav */
+    }
+
+    /* Enhanced Mobile Navigation */
+    .navbar {
+      position: fixed;
+      top: 0;
+      width: 100%;
+      background: rgba(0, 0, 0, 0.95);
+      backdrop-filter: blur(20px);
+      z-index: 1000;
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      transition: all 0.3s ease;
+    }
+
+    .nav-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      text-decoration: none;
+      color: #fff;
+      font-size: 1.2rem;
+      font-weight: bold;
+    }
+
+    .logo i {
+      color: #e50914;
+      font-size: 1.4rem;
+    }
+
+    .search-container {
+      position: relative;
+      flex-grow: 1;
+      max-width: 400px;
+      margin: 0 1rem;
+    }
+
+    .search-box {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 25px;
+      padding: 0.6rem 2.5rem 0.6rem 1rem;
+      color: #fff;
+      font-size: 0.9rem;
+      outline: none;
+      transition: all 0.3s ease;
+    }
+
+    .search-box:focus {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: #e50914;
+      box-shadow: 0 0 0 3px rgba(229, 9, 20, 0.1);
+    }
+
+    .search-box::placeholder {
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    .search-icon {
+      position: absolute;
+      right: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: rgba(255, 255, 255, 0.6);
+      cursor: pointer;
+      transition: color 0.3s ease;
+    }
+
+    .search-icon:hover {
+      color: #e50914;
+    }
+
+    /* Mobile Menu Button */
+    .mobile-menu-btn {
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      width: 40px;
+      height: 40px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+    }
+
+    .mobile-menu-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .menu-line {
+      width: 20px;
+      height: 2px;
+      background: #fff;
+      margin: 2px 0;
+      transition: all 0.3s ease;
+      border-radius: 1px;
+    }
+
+    .mobile-menu-btn.active .menu-line:nth-child(1) {
+      transform: rotate(-45deg) translate(-4px, 4px);
+    }
+
+    .mobile-menu-btn.active .menu-line:nth-child(2) {
+      opacity: 0;
+    }
+
+    .mobile-menu-btn.active .menu-line:nth-child(3) {
+      transform: rotate(45deg) translate(-4px, -4px);
+    }
+
+    /* Desktop Navigation Links */
+    .desktop-nav-links {
+      display: flex;
+      gap: 2rem;
+      list-style: none;
+      margin-left: 2rem;
+    }
+
+    .desktop-nav-links a {
+      color: #fff;
+      text-decoration: none;
+      transition: color 0.3s ease;
+      font-weight: 500;
+      padding: 0.5rem;
+      border-radius: 6px;
+      transition: all 0.3s ease;
+    }
+
+    .desktop-nav-links a:hover, 
+    .desktop-nav-links a.active {
+      color: #e50914;
+      background: rgba(229, 9, 20, 0.1);
+    }
+
+    /* Mobile Navigation Overlay */
+    .mobile-nav-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.95);
+      backdrop-filter: blur(20px);
+      z-index: 2000;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .mobile-nav-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .mobile-nav-content {
+      position: relative;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 2rem;
+      transform: translateY(50px);
+      transition: transform 0.3s ease;
+    }
+
+    .mobile-nav-overlay.active .mobile-nav-content {
+      transform: translateY(0);
+    }
+
+    .mobile-nav-links {
+      list-style: none;
+      text-align: center;
+      width: 100%;
+      max-width: 300px;
+    }
+
+    .mobile-nav-links li {
+      margin: 1rem 0;
+      opacity: 0;
+      transform: translateX(-30px);
+      transition: all 0.3s ease;
+    }
+
+    .mobile-nav-overlay.active .mobile-nav-links li {
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    .mobile-nav-links li:nth-child(1) { transition-delay: 0.1s; }
+    .mobile-nav-links li:nth-child(2) { transition-delay: 0.15s; }
+    .mobile-nav-links li:nth-child(3) { transition-delay: 0.2s; }
+    .mobile-nav-links li:nth-child(4) { transition-delay: 0.25s; }
+    .mobile-nav-links li:nth-child(5) { transition-delay: 0.3s; }
+    .mobile-nav-links li:nth-child(6) { transition-delay: 0.35s; }
+    .mobile-nav-links li:nth-child(7) { transition-delay: 0.4s; }
+
+    .mobile-nav-links a {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      color: #fff;
+      text-decoration: none;
+      font-size: 1.2rem;
+      font-weight: 500;
+      padding: 1rem 1.5rem;
+      border-radius: 12px;
+      transition: all 0.3s ease;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .mobile-nav-links a:hover,
+    .mobile-nav-links a.active {
+      background: linear-gradient(135deg, #e50914, #b8070f);
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(229, 9, 20, 0.3);
+    }
+
+    .mobile-nav-links i {
+      font-size: 1.1rem;
+      width: 20px;
+      text-align: center;
+    }
+
+    /* Bottom Navigation */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background: rgba(0, 0, 0, 0.95);
+      backdrop-filter: blur(20px);
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      z-index: 1000;
+      display: none;
+    }
+
+    .bottom-nav-content {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 0.5rem;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .bottom-nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.25rem;
+      text-decoration: none;
+      color: rgba(255, 255, 255, 0.6);
+      padding: 0.5rem;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+      min-width: 60px;
+    }
+
+    .bottom-nav-item.active,
+    .bottom-nav-item:hover {
+      color: #e50914;
+      background: rgba(229, 9, 20, 0.1);
+    }
+
+    .bottom-nav-item i {
+      font-size: 1.2rem;
+    }
+
+    .bottom-nav-item span {
+      font-size: 0.7rem;
+      font-weight: 500;
+    }
+
+    /* Scroll to Top Button */
+    .scroll-top {
+      position: fixed;
+      bottom: 100px;
+      right: 20px;
+      width: 50px;
+      height: 50px;
+      background: linear-gradient(135deg, #e50914, #b8070f);
+      border: none;
+      border-radius: 50%;
+      color: #fff;
+      font-size: 1.2rem;
+      cursor: pointer;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(20px);
+      transition: all 0.3s ease;
+      z-index: 999;
+      box-shadow: 0 4px 20px rgba(229, 9, 20, 0.3);
+    }
+
+    .scroll-top.visible {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+
+    .scroll-top:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 30px rgba(229, 9, 20, 0.4);
+    }
+
+    /* Main Content */
+    .main-content {
+      margin-top: 80px;
+      padding: 2rem;
+      max-width: 1400px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    /* Content Sections */
+    .content-section {
+      margin-bottom: 3rem;
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .section-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 0;
+    }
+
+    .view-all-btn {
+      background: none;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: #fff;
+      padding: 0.5rem 1rem;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 0.9rem;
+    }
+
+    .view-all-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: #e50914;
+      transform: translateY(-1px);
+    }
+
+    /* Show Cards Container */
+    .shows-container {
+      position: relative;
+    }
+
+    .shows-scroll {
+      display: flex;
+      gap: 1rem;
+      overflow-x: auto;
+      scroll-behavior: smooth;
+      padding: 0.5rem 0;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+
+    .shows-scroll::-webkit-scrollbar {
+      display: none;
+    }
+
+    /* Navigation Arrows */
+    .nav-arrow {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(0, 0, 0, 0.8);
+      border: none;
+      color: #fff;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 1.2rem;
+      z-index: 10;
+      transition: all 0.3s ease;
+      opacity: 0;
+    }
+
+    .shows-container:hover .nav-arrow {
+      opacity: 1;
+    }
+
+    .nav-arrow:hover {
+      background: rgba(229, 9, 20, 0.9);
+      transform: translateY(-50%) scale(1.1);
+    }
+
+    .nav-arrow.prev {
+      left: -25px;
+    }
+
+    .nav-arrow.next {
+      right: -25px;
+    }
+
+    /* Show Cards */
+    .show-card {
+      flex: 0 0 280px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border-radius: 12px;
+      overflow: hidden;
+      position: relative;
+      background: #1a1a1a;
+    }
+
+    .show-card:hover {
+      transform: scale(1.05) translateY(-5px);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+      z-index: 5;
+    }
+
+    .show-card img {
+      width: 100%;
+      height: 400px;
+      object-fit: cover;
+      transition: all 0.3s ease;
+    }
+
+    .show-card:hover img {
+      filter: brightness(0.7);
+    }
+
+    .card-overlay {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: linear-gradient(transparent, rgba(0, 0, 0, 0.9));
+      padding: 2rem 1rem 1rem;
+      transform: translateY(100%);
+      transition: all 0.3s ease;
+    }
+
+    .show-card:hover .card-overlay {
+      transform: translateY(0);
+    }
+
+    .card-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      line-height: 1.3;
+    }
+
+    .card-meta {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 0.5rem;
+      font-size: 0.85rem;
+      color: rgba(255, 255, 255, 0.8);
+    }
+
+    .card-description {
+      font-size: 0.9rem;
+      color: rgba(255, 255, 255, 0.9);
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .card-actions {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 1rem;
+    }
+
+    .btn {
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: all 0.3s ease;
+    }
+
+    .btn-primary {
+      background: #e50914;
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      background: #b8070f;
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.2);
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    /* Rating Badge */
+    .rating-badge {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: rgba(0, 0, 0, 0.8);
+      padding: 0.3rem 0.6rem;
+      border-radius: 15px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    /* Genre Tags */
+    .genre-tags {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-top: 0.5rem;
+    }
+
+    .genre-tag {
+      background: rgba(229, 9, 20, 0.2);
+      color: #ff6b6b;
+      padding: 0.2rem 0.5rem;
+      border-radius: 10px;
+      font-size: 0.75rem;
+      border: 1px solid rgba(229, 9, 20, 0.3);
+    }
+
+    /* View All Modal */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.9);
+      backdrop-filter: blur(10px);
+      z-index: 2000;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .modal-content {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      overflow-y: auto;
+      padding: 2rem;
+      transform: translateY(50px);
+      transition: transform 0.3s ease;
+    }
+
+    .modal-overlay.active .modal-content {
+      transform: translateY(0);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+      position: sticky;
+      top: 0;
+      background: rgba(10, 10, 10, 0.95);
+      backdrop-filter: blur(10px);
+      padding: 1rem 0;
+      z-index: 10;
+    }
+
+    .modal-title {
+      font-size: 2rem;
+      font-weight: 600;
+      background: linear-gradient(45deg, #e50914, #ff6b6b);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .close-modal {
+      background: none;
+      border: none;
+      color: #fff;
+      font-size: 2rem;
+      cursor: pointer;
+      padding: 0.5rem;
+      border-radius: 50%;
+      transition: all 0.3s ease;
+    }
+
+    .close-modal:hover {
+      background: rgba(255, 255, 255, 0.1);
+      transform: rotate(90deg);
+    }
+
+    .modal-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.5rem;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .modal-show-card {
+      background: #1a1a1a;
+      border-radius: 12px;
+      overflow: hidden;
+      transition: all 0.3s ease;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .modal-show-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 15px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    .modal-show-card img {
+      width: 100%;
+      height: 380px;
+      object-fit: cover;
+    }
+
+    .modal-card-info {
+      padding: 1rem;
+    }
+
+    .modal-card-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      line-height: 1.3;
+    }
+
+    .modal-card-meta {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 0.5rem;
+      font-size: 0.85rem;
+      color: rgba(255, 255, 255, 0.8);
+    }
+
+    .modal-card-description {
+      font-size: 0.9rem;
+      color: rgba(255, 255, 255, 0.9);
+      line-height: 1.4;
+      margin-bottom: 1rem;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    /* Loading States */
+    .loading {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 200px;
+      font-size: 1.2rem;
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-top: 3px solid #e50914;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-right: 1rem;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Responsive Design */
+    @media (max-width: 1024px) {
+      .desktop-nav-links {
+        display: none;
+      }
+
+      .mobile-menu-btn {
+        display: flex;
+      }
+
+      .nav-arrow {
+        display: none;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .main-content {
+        padding: 1rem;
+        margin-top: 70px;
+      }
+
+      .bottom-nav {
+        display: block;
+      }
+
+      .search-container {
+        margin: 0 0.5rem;
+      }
+
+      .search-box {
+        font-size: 0.85rem;
+        padding: 0.5rem 2.2rem 0.5rem 0.8rem;
+      }
+
+      .show-card {
+        flex: 0 0 200px;
+      }
+
+      .show-card img {
+        height: 300px;
+      }
+
+      .section-title {
+        font-size: 1.3rem;
+      }
+
+      .view-all-btn {
+        font-size: 0.8rem;
+        padding: 0.4rem 0.8rem;
+      }
+
+      .modal-content {
+        padding: 1rem;
+      }
+
+      .modal-title {
+        font-size: 1.5rem;
+      }
+
+      .modal-grid {
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 1rem;
+      }
+
+      .modal-show-card img {
+        height: 240px;
+      }
+
+      .modal-card-info {
+        padding: 0.75rem;
+      }
+
+      .modal-card-title {
+        font-size: 1rem;
+      }
+
+      .modal-card-description {
+        font-size: 0.85rem;
+        -webkit-line-clamp: 2;
+      }
+
+      .scroll-top {
+        bottom: 90px;
+        right: 15px;
+        width: 45px;
+        height: 45px;
+        font-size: 1.1rem;
+      }
+    }
+
+
+    @media (max-width: 480px) {
+      .navbar {
+        padding: 0.6rem 0.8rem;
+      }
+
+      .search-container {
+        margin: 0 0.3rem;
+      }
+
+      .main-content {
+        padding: 0.8rem;
+      }
+
+      .show-card {
+        flex: 0 0 160px;
+      }
+
+      .show-card img {
+        height: 240px;
+      }
+
+      .section-title {
+        font-size: 1.1rem;
+      }
+
+      .modal-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
+      }
+
+      .modal-show-card img {
+        height: 200px;
+      }
+
+      .modal-card-info {
+        padding: 0.5rem;
+      }
+
+      .modal-card-title {
+        font-size: 0.9rem;
+      }
+
+      .modal-card-meta {
+        font-size: 0.75rem;
+      }
+
+      .modal-card-description {
+        font-size: 0.8rem;
+        -webkit-line-clamp: 2;
+      }
+
+      .mobile-nav-links a {
+        font-size: 1.1rem;
+        padding: 0.8rem 1rem;
+      }
+    }
+	
+.progress-bar {
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  margin-top: 0.5rem;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: #e50914;
+  width: 0;
+  transition: width 0.3s ease;
+}
+
+.remove-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 2;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  border: none;
+  font-size: 18px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  cursor: pointer;
+  line-height: 20px;
+  text-align: center;
+  padding: 0;
+}
+.remove-btn:hover {
+  background: rgba(255, 0, 0, 0.8);
+}
+
+.clear-icon {
+  position: absolute;
+  right: 2.2rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  z-index: 1;
+  font-size: 0.9rem;
+}
+
+.clear-icon:hover {
+  color: #ff6b6b;
+}
+
+
+  </style>
+</head>
+<body>
+  <!-- Enhanced Mobile Navigation -->
+  <nav class="navbar" id="navbar">
+    <div class="nav-content">
+      <a href="index.html" class="logo">
+        <i class="fas fa-play-circle"></i>
+        <span>Streamify</span>
+      </a>
+
+      <!-- Desktop Navigation Links -->
+      <ul class="desktop-nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="#" class="active">TV Shows</a></li>
+        <li><a href="index.html">Movies</a></li>
+        <li><a href="#">My List</a></li>
+      </ul>
+
+      <div class="search-container">
+  <input type="text" class="search-box" placeholder="Search shows..." id="searchInput">
+  <i class="fas fa-times clear-icon" id="clearSearch" style="display:none;"></i>
+  <i class="fas fa-search search-icon" id="searchIcon"></i>
+</div>
+
+
+      <button class="mobile-menu-btn" id="mobileMenuBtn">
+        <div class="menu-line"></div>
+        <div class="menu-line"></div>
+        <div class="menu-line"></div>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Mobile Navigation Overlay -->
+  <div class="mobile-nav-overlay" id="mobileNavOverlay">
+    <div class="mobile-nav-content">
+      <ul class="mobile-nav-links">
+        <li><a href="index.html"><i class="fas fa-home"></i> Home</a></li>
+        <li><a href="#" class="active"><i class="fas fa-tv"></i> TV Shows</a></li>
+        <li><a href="index.html"><i class="fas fa-film"></i> Movies</a></li>
+        <li><a href="https://t.me/panguplay_chat" target="_blank" class="mobile-nav-item telegram-link"><i class="fab fa-telegram-plane"></i>Join Us</a></li>
+        <li><a href="#"><i class="fas fa-heart"></i> My List</a></li>
+        <li><a href="#"><i class="fas fa-download"></i> Downloads</a></li>
+        <li><a href="#"><i class="fas fa-user"></i> Profile</a></li>
+      </ul>      
+    </div>
+  </div>
+
+  <!-- Bottom Navigation -->
+  <nav class="bottom-nav">
+    <div class="bottom-nav-content">
+      <a href="index.html" class="bottom-nav-item">
+        <i class="fas fa-home"></i>
+        <span>Home</span>
+      </a>
+      <a href="#" class="bottom-nav-item">
+        <i class="fas fa-search"></i>
+        <span>Search</span>
+      </a>
+      <a href="#" class="bottom-nav-item active">
+        <i class="fas fa-tv"></i>
+        <span>Shows</span>
+      </a>
+      <a href="#" id="myListNav" class="bottom-nav-item">
+        <i class="fas fa-heart"></i>
+        <span>MyList</span>
+      </a>
+      <a href="#" class="bottom-nav-item">
+        <i class="fas fa-user"></i>
+        <span>Profile</span>
+      </a>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <!-- Loading State -->
+    <div class="loading" id="loadingState">
+      <div class="spinner"></div>
+      Loading shows...
+    </div>
+	
+	<!-- My List Section -->
+<div class="content-section" id="myListSection" style="display: none;">
+  <div class="section-header">
+    <h2 class="section-title">My List</h2>
+  </div>
+  <div class="shows-scroll" id="myListContainer"></div>
+</div>
+
+	
+	<div class="content-section" id="continueWatchingSection" style="display: none;">
+	  <div class="section-header">
+		<h2 class="section-title">Continue Watching</h2>
+	  </div>
+	  <div class="shows-scroll" id="continueWatchingContainer"></div>
+	</div>
+	
+    <!-- Content Sections -->
+    <div id="contentSections" style="display: none;"></div>
+  </main>
+
+  <!-- View All Modal -->
+  <div class="modal-overlay" id="viewAllModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title" id="modalTitle"></h2>
+        <button class="close-modal" onclick="app.closeModal()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="modal-grid" id="modalGrid"></div>
+    </div>
+  </div>
+
+  <!-- Scroll to Top Button -->
+  <button class="scroll-top" id="scrollTop">
+    <i class="fas fa-arrow-up"></i>
+  </button>
+
+  <script>
+    class StreamingApp {
+      constructor() {
+        this.shows = [];
+        this.filteredShows = [];
+        this.searchQuery = '';
+        this.init();
+      }
+
+      async init() {
+        try {
+          await this.loadShows();
+          this.setupEventListeners();
+          this.renderContent();
+          this.hideLoading();
+		  	  renderContinueWatching();
+        } catch (error) {
+          console.error('Failed to initialize app:', error);
+          this.hideLoading();
+        }
+      }
+
+      async loadShows() {
+        try {
+          const response = await fetch('tvshows.json');
+          this.shows = await response.json();
+          this.filteredShows = this.shows;
+        } catch (error) {
+          console.error('Error loading shows:', error);
+          // Fallback to demo data if JSON file not found
+          this.shows = this.getDemoData();
+          this.filteredShows = this.shows;
+        }
+      }
+
+      getDemoData() {
+        return [
+          {
+            id: "demo1",
+            title: "Breaking Bad",
+            description: "A high school chemistry teacher turned methamphetamine manufacturer.",
+            genres: ["Drama", "Crime", "Thriller"],
+            rating: "9.5",
+            items: [{
+              type: "episode",
+              title: "Pilot",
+              sequence: 1,
+              description: "Walter White, a struggling high school chemistry teacher, is diagnosed with inoperable lung cancer.",
+              duration: "2400",
+              container: {
+                title: "Season 1",
+                container: {
+                  title: "Breaking Bad",
+                  imageInfo: [{
+                    type: "portrait_large",
+                    url: "https://via.placeholder.com/280x400/1a472a/fff?text=Breaking+Bad"
+                  }]
+                }
+              }
+            }]
+          },
+          {
+            id: "demo2",
+            title: "Stranger Things",
+            description: "When a young boy disappears, his mother, a police chief and his friends must confront terrifying supernatural forces.",
+            genres: ["Drama", "Fantasy", "Horror"],
+            rating: "8.7",
+            items: [{
+              type: "episode",
+              title: "The Vanishing of Will Byers",
+              sequence: 1,
+              description: "On his way home from a friend's house, young Will sees something terrifying.",
+              duration: "2880",
+              container: {
+                title: "Season 1",
+                container: {
+                  title: "Stranger Things",
+                  imageInfo: [{
+                    type: "portrait_large",
+                    url: "https://via.placeholder.com/280x400/8b0000/fff?text=Stranger+Things"
+                  }]
+                }
+              }
+            }]
+          },
+          {
+            id: "demo3",
+            title: "The Crown",
+            description: "Follows the political rivalries and romance of Queen Elizabeth II's reign.",
+            genres: ["Drama", "Biography", "History"],
+            rating: "8.6",
+            items: [{
+              type: "episode",
+              title: "Wolferton Splash",
+              sequence: 1,
+              description: "A young Princess Elizabeth marries Prince Philip.",
+              duration: "3360",
+              container: {
+                title: "Season 1",
+                container: {
+                  title: "The Crown",
+                  imageInfo: [{
+                    type: "portrait_large",
+                    url: "https://via.placeholder.com/280x400/4b0082/fff?text=The+Crown"
+                  }]
+                }
+              }
+            }]
+          },
+          {
+            id: "demo4",
+            title: "Ozark",
+            description: "A financial advisor drags his family from Chicago to the Missouri Ozarks.",
+            genres: ["Drama", "Crime", "Thriller"],
+            rating: "8.4",
+            items: [{
+              type: "episode",
+              title: "Sugarwood",
+              sequence: 1,
+              description: "After a money laundering scheme for a Mexican cartel goes wrong, financial advisor Marty Byrde proposes to make amends by offering to set up a bigger laundering operation in the Lake of the Ozarks region of central Missouri.",
+              duration: "3600",
+              container: {
+                title: "Season 1",
+                container: {
+                  title: "Ozark",
+                  imageInfo: [{
+                    type: "portrait_large",
+                    url: "https://via.placeholder.com/280x400/2f4f4f/fff?text=Ozark"
+                  }]
+                }
+              }
+            }]
+          },
+          {
+            id: "demo5",
+            title: "House of Cards",
+            description: "A Congressman works with his equally conniving wife to exact revenge on the people who betrayed him.",
+            genres: ["Drama", "Thriller", "Political"],
+            rating: "8.7",
+            items: [{
+              type: "episode",
+              title: "Chapter 1",
+              sequence: 1,
+              description: "House Majority Whip Francis Underwood takes you along on his quest for power.",
+              duration: "3000",
+              container: {
+                title: "Season 1",
+                container: {
+                  title: "House of Cards",
+                  imageInfo: [{
+                    type: "portrait_large",
+                    url: "https://via.placeholder.com/280x400/8b0000/fff?text=House+of+Cards"
+                  }]
+                }
+              }
+            }]
+          },
+          {
+            id: "demo6",
+            title: "The Office",
+            description: "A mockumentary on a group of typical office workers, where the workday consists of ego clashes, inappropriate behavior, and tedium.",
+            genres: ["Comedy", "Mockumentary"],
+            rating: "9.0",
+            items: [{
+              type: "episode",
+              title: "Pilot",
+              sequence: 1,
+              description: "A documentary crew arrives at the offices of Dunder Mifflin to observe the employees and their daily interactions.",
+              duration: "1320",
+              container: {
+                title: "Season 1",
+                container: {
+                  title: "The Office",
+                  imageInfo: [{
+                    type: "portrait_large",
+                    url: "https://via.placeholder.com/280x400/4682b4/fff?text=The+Office"
+                  }]
+                }
+              }
+            }]
+          },
+          {
+            id: "demo7",
+            title: "Game of Thrones",
+            description: "Nine noble families fight for control over the lands of Westeros, while an ancient enemy returns after being dormant for millennia.",
+            genres: ["Drama", "Fantasy", "Adventure"],
+            rating: "9.3",
+            items: [{
+              type: "episode",
+              title: "Winter Is Coming",
+              sequence: 1,
+              description: "Eddard Stark is torn between his family and an old friend when asked to serve at the side of King Robert Baratheon.",
+              duration: "3720",
+              container: {
+                title: "Season 1",
+                container: {
+                  title: "Game of Thrones",
+                  imageInfo: [{
+                    type: "portrait_large",
+                    url: "https://via.placeholder.com/280x400/2f4f4f/fff?text=Game+of+Thrones"
+                  }]
+                }
+              }
+            }]
+          },
+          {
+            id: "demo8",
+            title: "Friends",
+            description: "Follows the personal and professional lives of six twenty to thirty-something-year-old friends living in Manhattan.",
+            genres: ["Comedy", "Romance"],
+            rating: "8.9",
+            items: [{
+              type: "episode",
+              title: "The One Where Monica Gets a Roommate",
+              sequence: 1,
+              description: "Monica and the gang introduce Rachel to the real world after she leaves her fiancé at the altar.",
+              duration: "1320",
+              container: {
+                title: "Season 1",
+                container: {
+                  title: "Friends",
+                  imageInfo: [{
+                    type: "portrait_large",
+                    url: "https://via.placeholder.com/280x400/ff6347/fff?text=Friends"
+                  }]
+                }
+              }
+            }]
+          }
+        ];
+      }
+
+      setupEventListeners() {
+        // Mobile menu toggle
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        const mobileNavOverlay = document.getElementById('mobileNavOverlay');
+
+        mobileMenuBtn.addEventListener('click', () => {
+          mobileMenuBtn.classList.toggle('active');
+          mobileNavOverlay.classList.toggle('active');
+          document.body.style.overflow = mobileNavOverlay.classList.contains('active') ? 'hidden' : 'auto';
+        });
+
+        // Close mobile menu when clicking on overlay
+        mobileNavOverlay.addEventListener('click', (e) => {
+          if (e.target === mobileNavOverlay) {
+            this.closeMobileMenu();
+          }
+        });
+
+        // Close mobile menu when clicking on links
+        const mobileNavLinks = document.querySelectorAll('.mobile-nav-links a');
+        mobileNavLinks.forEach(link => {
+          link.addEventListener('click', () => {
+            this.closeMobileMenu();
+          });
+        });
+
+        // Header scroll effect
+        window.addEventListener('scroll', () => {
+          const navbar = document.getElementById('navbar');
+          if (window.scrollY > 50) {
+            navbar.style.background = 'rgba(0, 0, 0, 0.98)';
+          } else {
+            navbar.style.background = 'rgba(0, 0, 0, 0.95)';
+          }
+
+          // Scroll to top button
+          const scrollTop = document.getElementById('scrollTop');
+          if (window.scrollY > 500) {
+            scrollTop.classList.add('visible');
+          } else {
+            scrollTop.classList.remove('visible');
+          }
+        });
+
+        // Scroll to top functionality
+        document.getElementById('scrollTop').addEventListener('click', () => {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+
+        // Search functionality
+        const searchInput = document.getElementById('searchInput');
+const clearSearch = document.getElementById('clearSearch');
+
+searchInput.addEventListener('input', (e) => {
+  this.searchQuery = e.target.value.toLowerCase();
+  clearSearch.style.display = e.target.value ? 'block' : 'none';
+  this.filterShows();
+  
+});
+
+clearSearch.addEventListener('click', () => {
+  searchInput.value = '';
+  clearSearch.style.display = 'none';
+  this.searchQuery = '';
+  this.filterShows();
+  searchInput.focus();
+  renderContinueWatching();
+});
+
+
+        // Search icon click
+        document.getElementById('searchIcon').addEventListener('click', () => {
+          searchInput.focus();
+        });
+
+        // Close modal on outside click
+        document.getElementById('viewAllModal').addEventListener('click', (e) => {
+          if (e.target.classList.contains('modal-overlay')) {
+            this.closeModal();
+          }
+        });
+
+        // Close modal on escape key
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape') {
+            this.closeModal();
+            this.closeMobileMenu();
+          }
+        });
+
+        // Bottom nav active state
+        const bottomNavItems = document.querySelectorAll('.bottom-nav-item');
+        bottomNavItems.forEach(item => {
+          item.addEventListener('click', (e) => {
+            // Don't prevent default for actual navigation
+            bottomNavItems.forEach(nav => nav.classList.remove('active'));
+            item.classList.add('active');
+          });
+        });
+      }
+
+      closeMobileMenu() {
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        const mobileNavOverlay = document.getElementById('mobileNavOverlay');
+        
+        mobileMenuBtn.classList.remove('active');
+        mobileNavOverlay.classList.remove('active');
+        document.body.style.overflow = 'auto';
+      }
+
+      filterShows() {
+        this.filteredShows = this.shows.filter(show => {
+          const matchesSearch = this.searchQuery === '' || 
+            this.getShowTitle(show).toLowerCase().includes(this.searchQuery) ||
+            this.getShowDescription(show).toLowerCase().includes(this.searchQuery) ||
+            this.getShowGenres(show).some(genre => genre.toLowerCase().includes(this.searchQuery));
+
+          return matchesSearch;
+        });
+
+        this.renderContent();
+      }
+
+      getShowTitle(show) {
+        const episode = show.items?.find(item => item.type === 'episode');
+        return episode?.container?.container?.title || show.title || 'Untitled Show';
+      }
+
+      getShowDescription(show) {
+        const episode = show.items?.find(item => item.type === 'episode');
+        return show.description || episode?.description || '';
+      }
+
+      getShowGenres(show) {
+        const episode = show.items?.find(item => item.type === 'episode');
+        return show.genres || episode?.genres || [];
+      }
+
+      getShowImage(show) {
+        const episode = show.items?.find(item => item.type === 'episode');
+        return episode?.container?.container?.imageInfo?.find(img => img.type === 'portrait_large')?.url ||
+               episode?.imageInfo?.find(img => img.type === 'portrait_large')?.url ||
+               'https://via.placeholder.com/280x400/333/fff?text=No+Image';
+      }
+
+      getShowRating(show) {
+        const episode = show.items?.find(item => item.type === 'episode');
+        return show.rating || episode?.rating || 'N/A';
+      }
+
+      getEpisodeCount(show) {
+        return show.items?.filter(item => item.type === 'episode').length || Math.floor(Math.random() * 50) + 10;
+      }
+
+      renderContent() {
+        const container = document.getElementById('contentSections');
+        
+        if (this.filteredShows.length === 0) {
+          container.innerHTML = `
+            <div style="text-align: center; padding: 4rem; color: rgba(255, 255, 255, 0.6);">
+              <i class="fas fa-search" style="font-size: 3rem; margin-bottom: 1rem; color: #e50914;"></i>
+              <h3>No shows found</h3>
+              <p>Try adjusting your search criteria</p>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = '';
+
+        // If searching, show search results in grid layout
+        if (this.searchQuery.trim() !== '') {
+          const searchSection = this.createSearchResultsSection(this.filteredShows);
+          container.appendChild(searchSection);
+        } else {
+          // Normal view: Group shows by genre for better organization
+          const sections = this.groupShowsByGenre();
+          
+          Object.entries(sections).forEach(([sectionTitle, shows]) => {
+            if (shows.length === 0) return;
+            
+            const section = this.createSection(sectionTitle, shows);
+            container.appendChild(section);
+          });
+        }
+      }
+
+      groupShowsByGenre() {
+        const groups = {};
+        
+        this.filteredShows.forEach(show => {
+          const genres = this.getShowGenres(show);
+          if (genres.length === 0) {
+            if (!groups['Popular Shows']) groups['Popular Shows'] = [];
+            groups['Popular Shows'].push(show);
+          } else {
+            genres.forEach(genre => {
+              if (!groups[genre]) groups[genre] = [];
+              groups[genre].push(show);
+            });
+          }
+        });
+
+        // Shuffle shows within each genre category
+        //Object.keys(groups).forEach(genre => {
+          //groups[genre] = this.shuffleArray(groups[genre]);
+        //});
+
+        return groups;
+      }
+
+      shuffleArray(array) {
+        const shuffled = [...array];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        return shuffled;
+      }
+
+      createSearchResultsSection(shows) {
+        const section = document.createElement('section');
+        section.className = 'content-section';
+        section.innerHTML = `
+          <div class="section-header">
+            <h2 class="section-title">Search Results for "${this.searchQuery}"</h2>
+            <span style="color: rgba(255, 255, 255, 0.6); font-size: 0.9rem;">${shows.length} show${shows.length !== 1 ? 's' : ''} found</span>
+          </div>
+          <div class="modal-grid">
+            ${shows.map(show => this.createModalShowCard(show)).join('')}
+          </div>
+        `;
+        return section;
+      }
+
+      createSection(title, shows) {
+        const section = document.createElement('section');
+        section.className = 'content-section';
+        section.innerHTML = `
+          <div class="section-header">
+            <h2 class="section-title">${title}</h2>
+            <button class="view-all-btn" onclick="app.viewAll('${title}')">View All</button>
+          </div>
+          <div class="shows-container">
+            <button class="nav-arrow prev" onclick="app.scrollLeft(this)">
+              <i class="fas fa-chevron-left"></i>
+            </button>
+            <div class="shows-scroll">
+              ${shows.slice(0, 10).map(show => this.createShowCard(show)).join('')}
+            </div>
+            <button class="nav-arrow next" onclick="app.scrollRight(this)">
+              <i class="fas fa-chevron-right"></i>
+            </button>
+          </div>
+        `;
+        return section;
+      }
+
+      createShowCard(show) {
+        const title = this.getShowTitle(show);
+        const description = this.getShowDescription(show);
+        const image = this.getShowImage(show);
+        const rating = this.getShowRating(show);
+        const genres = this.getShowGenres(show);
+        const episodeCount = this.getEpisodeCount(show);
+
+        return `
+          <div class="show-card" onclick="app.openShow('${show.id}')">
+            <img src="${image}" alt="${title}" loading="lazy">
+            <div class="rating-badge">${rating === '18' ? 'A' : 'U/A ' + rating + '+'}</div>
+            <div class="card-overlay">
+              <div class="card-title">${title}</div>
+              <div class="card-meta">
+                <span>${episodeCount} Episodes</span>
+                <span>2024</span>
+              </div>
+              <div class="card-description">${description}</div>
+              <div class="genre-tags">
+                ${genres.slice(0, 3).map(genre => `<span class="genre-tag">${genre}</span>`).join('')}
+              </div>
+              <div class="card-actions">
+                <button class="btn btn-primary" onclick="event.stopPropagation(); app.playShow('${show.id}')">
+                  <i class="fas fa-play"></i> Play
+                </button>
+                <button class="btn btn-secondary" onclick="event.stopPropagation(); app.addToList('${show.id}')">
+                  <i class="fas fa-plus"></i> My List
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      viewAll(genre) {
+        const sections = this.groupShowsByGenre();
+        const shows = sections[genre] || [];
+        
+        document.getElementById('modalTitle').textContent = genre;
+        this.renderModalGrid(shows);
+        
+        // Reset scroll position to top
+        const modalContent = document.querySelector('.modal-content');
+        modalContent.scrollTop = 0;
+        
+        document.getElementById('viewAllModal').classList.add('active');
+        document.body.style.overflow = 'hidden';
+      }
+
+      renderModalGrid(shows) {
+        const grid = document.getElementById('modalGrid');
+        grid.innerHTML = shows.map(show => this.createModalShowCard(show)).join('');
+      }
+
+      createModalShowCard(show) {
+        const title = this.getShowTitle(show);
+        const description = this.getShowDescription(show);
+        const image = this.getShowImage(show);
+        const rating = this.getShowRating(show);
+        const genres = this.getShowGenres(show);
+        const episodeCount = this.getEpisodeCount(show);
+
+        return `
+          <div class="modal-show-card" onclick="app.openShow('${show.id}')">
+            <img src="${image}" alt="${title}" loading="lazy">
+            <div class="rating-badge">${rating === '18' ? 'A' : 'U/A ' + rating + '+'}</div>
+            <div class="modal-card-info">
+              <div class="modal-card-title">${title}</div>
+              <div class="modal-card-meta">
+                <span>${episodeCount} Episodes</span>
+                <span>2024</span>
+              </div>
+              <div class="modal-card-description">${description}</div>
+              <div class="genre-tags">
+                ${genres.slice(0, 2).map(genre => `<span class="genre-tag">${genre}</span>`).join('')}
+              </div>
+              <div class="card-actions">
+                <button class="btn btn-primary" onclick="event.stopPropagation(); app.playShow('${show.id}')">
+                  <i class="fas fa-play"></i> Play
+                </button>
+                <button class="btn btn-secondary" onclick="event.stopPropagation(); app.addToList('${show.id}')">
+                  <i class="fas fa-plus"></i> List
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      closeModal() {
+        document.getElementById('viewAllModal').classList.remove('active');
+        document.body.style.overflow = 'auto';
+      }
+
+      scrollLeft(button) {
+        const container = button.parentElement.querySelector('.shows-scroll');
+        container.scrollBy({ left: -300, behavior: 'smooth' });
+      }
+
+      scrollRight(button) {
+        const container = button.parentElement.querySelector('.shows-scroll');
+        container.scrollBy({ left: 300, behavior: 'smooth' });
+      }
+
+      openShow(showId) {
+        // Redirect to play page
+        window.location.href = `tvplayer.html?id=${showId}`;
+      }
+
+      playShow(showId) {
+        // Redirect to play page
+        window.location.href = `tvplayer.html?id=${showId}`;
+      }
+
+      addToList(showId) {
+        // Add to user's list (would integrate with backend)
+        console.log('Added to list:', showId);
+        // Show toast notification
+        this.showToast('Added to My List');
+      }
+
+      showToast(message) {
+        const toast = document.createElement('div');
+        toast.style.cssText = `
+          position: fixed;
+          bottom: 100px;
+          right: 1rem;
+          background: linear-gradient(135deg, #e50914, #b8070f);
+          color: white;
+          padding: 1rem 1.5rem;
+          border-radius: 12px;
+          z-index: 10000;
+          transform: translateY(100px);
+          transition: transform 0.3s ease;
+          box-shadow: 0 10px 30px rgba(229, 9, 20, 0.3);
+          font-weight: 500;
+        `;
+        toast.textContent = message;
+        document.body.appendChild(toast);
+
+        setTimeout(() => toast.style.transform = 'translateY(0)', 100);
+        setTimeout(() => {
+          toast.style.transform = 'translateY(100px)';
+          setTimeout(() => document.body.removeChild(toast), 300);
+        }, 3000);
+      }
+
+      hideLoading() {
+        document.getElementById('loadingState').style.display = 'none';
+        document.getElementById('contentSections').style.display = 'block';
+      }
+    }
+	
+// Initialize the app
+    const app = new StreamingApp();
+
+  </script>
+  
+<script>
+function renderContinueWatching() {
+  const data = JSON.parse(localStorage.getItem('continueWatching') || '{}');
+  const entries = Object.entries(data);
+
+  if (entries.length === 0) {
+    console.log('No continue watching data found.');
+    return;
+  }
+
+  const target = document.getElementById('contentSections');
+  if (!target) {
+    console.warn('contentSections not found in DOM');
+    return;
+  }
+
+  const section = document.createElement('div');
+  section.className = 'content-section';
+  section.innerHTML = `
+    <div class="section-header">
+      <h2 class="section-title">Continue Watching</h2>
+    </div>
+    <div class="shows-container">
+      <div class="shows-scroll" id="continueWatchingContainer"></div>
+    </div>
+  `;
+  target.prepend(section);
+
+  const container = section.querySelector('#continueWatchingContainer');
+
+  entries.forEach(([showId, info]) => {
+    if (!info || !info.thumbnail || !info.showTitle) return;
+
+    const title = info.showTitle;
+    const thumbnail = info.thumbnail;
+    const episodeTitle = info.episodeTitle || '';
+    const progress = info.currentTime || 0;
+    const duration = info.duration || 1;
+    const percent = Math.floor((progress / duration) * 100);
+	const seasonNum = info.seasonNum;
+	const episodeNum = info.episodeNum;
+
+
+    const card = document.createElement('div');
+    card.className = 'show-card';
+    card.style.position = 'relative';
+
+    const subtitle = (seasonNum && episodeNum)
+  ? `S${seasonNum} E${episodeNum}`
+  : episodeTitle;
+
+card.innerHTML = `
+  <button class="remove-btn" title="Remove">×</button>
+  <img src="${thumbnail}" alt="${title}">
+  <div class="card-overlay">
+    <h3 class="card-title">${title}</h3>
+    <p class="card-subtitle">${subtitle}</p>
+    <div class="card-meta">
+      <span>${percent}% watched</span>
+    </div>
+    <div class="progress-bar">
+      <div class="progress-fill" style="width:${percent}%;"></div>
+    </div>
+  </div>
+`;
+
+
+    // Open player when clicked (except on the remove button)
+    card.addEventListener('click', (e) => {
+      if (e.target.classList.contains('remove-btn')) return;
+      window.location.href = `tvplayer.html?id=${showId}`;
+    });
+
+    // Handle remove button click
+    card.querySelector('.remove-btn').addEventListener('click', (e) => {
+  e.stopPropagation(); // Prevent card click
+
+  // Remove this card from DOM
+  card.remove();
+
+  // Update localStorage
+  const updated = JSON.parse(localStorage.getItem('continueWatching') || '{}');
+  delete updated[showId];
+  localStorage.setItem('continueWatching', JSON.stringify(updated));
+
+  // If no more items, remove the entire section
+  if (Object.keys(updated).length === 0) {
+    section.remove(); // remove the full "Continue Watching" section
+  }
+});
+
+
+    container.appendChild(card);
+  });
+}
+</script>
+
+<script>
+window.addEventListener('DOMContentLoaded', () => {
+  renderContinueWatching();
+});
+</script>
+
+  
+<script>
+// Service Worker registration
+// Add this to your main HTML pages (index.html, player.html, etc.)
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/service-worker.js', {
+      scope: '/'
+    })
+    .then((registration) => {
+      console.log('SW registered: ', registration);
+      
+      // Check for updates every 30 seconds
+      setInterval(() => {
+        registration.update();
+      }, 30000);
+      
+      // Handle service worker updates
+      registration.addEventListener('updatefound', () => {
+        const newWorker = registration.installing;
+        if (newWorker) {
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              // New content is available, prompt user to refresh
+              if (confirm('New version available! Refresh to update?')) {
+                newWorker.postMessage({ type: 'SKIP_WAITING' });
+                window.location.reload();
+              }
+            }
+          });
+        }
+      });
+    })
+    .catch((registrationError) => {
+      console.log('SW registration failed: ', registrationError);
+    });
+  });
+
+  // Listen for service worker controller changes
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    window.location.reload();
+  });
+}
+</script>   
+</body>
+</html>
