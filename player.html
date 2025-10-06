@@ -51,7 +51,8 @@
   left: 0;
   right: 0;
   background: linear-gradient(transparent, rgba(0,0,0,0.8));
-  padding: 20px 30px 20px 30px;
+  padding: 20px 30px;
+  padding-bottom: max(20px, env(safe-area-inset-bottom));
   opacity: 0;
   transition: opacity 0.3s ease;
   z-index: 10;
@@ -462,13 +463,8 @@
     /* Mobile Adjustments */
 @media (max-width: 768px) {
   .player-controls {
-    padding: 15px 20px 15px 20px;
-  }
-  
-  @supports (padding-bottom: env(safe-area-inset-bottom)) {
-    .player-controls {
-      padding-bottom: calc(15px + env(safe-area-inset-bottom));
-    }
+    padding: 15px 20px;
+    padding-bottom: max(15px, calc(15px + env(safe-area-inset-bottom)));
   }
 
   .control-btn {
@@ -1089,9 +1085,9 @@
         });
 
         // Mobile: touchstart
-        playerContainer.addEventListener('touchstart', () => {
-          this.showControls();
-        });
+        //playerContainer.addEventListener('touchstart', () => {
+          //this.showControls();
+        //});
 
         // Keep controls visible when interacting with them
         document.getElementById('playerControls').addEventListener('click', (e) => {
@@ -1190,10 +1186,13 @@
       }
 
 setupMobileSupport() {
+  const playerContainer = document.getElementById('playerContainer');
+  const controls = document.getElementById('playerControls');
+  const topControls = document.getElementById('topControls');
+  
   let lastTap = 0;
   let touchStartX = 0;
   let touchStartY = 0;
-  const playerContainer = document.getElementById('playerContainer');
 
   playerContainer.addEventListener('touchstart', (e) => {
     touchStartX = e.touches[0].clientX;
@@ -1209,63 +1208,52 @@ setupMobileSupport() {
     // Check if it's a tap (not a swipe)
     const deltaX = Math.abs(touchEndX - touchStartX);
     const deltaY = Math.abs(touchEndY - touchStartY);
-    const isTap = deltaX < 10 && deltaY < 10;
+    const isTap = deltaX < 15 && deltaY < 15;
 
     if (!isTap) return;
 
-    // Check if tap is on controls area
-    const controls = document.getElementById('playerControls');
-    const topControls = document.getElementById('topControls');
-    const centerPlay = document.getElementById('centerPlay');
-    
+    // Check if tap is on controls, buttons, or interactive elements
     const target = e.target;
-    const isControlsTap = controls.contains(target) || 
-                          topControls.contains(target) || 
-                          centerPlay.contains(target) ||
-                          target.closest('.player-controls') ||
-                          target.closest('.top-controls') ||
-                          target.closest('.center-play');
+    const isInteractiveElement = 
+      target.closest('.player-controls') ||
+      target.closest('.top-controls') ||
+      target.closest('.center-play') ||
+      target.tagName === 'BUTTON' ||
+      target.tagName === 'INPUT';
 
     if (timeSinceLastTap < 300 && timeSinceLastTap > 0) {
-      // Double tap detected
+      // Double tap - skip forward/backward
       const screenWidth = window.innerWidth;
       const tapX = touchEndX;
 
       if (tapX < screenWidth / 3) {
-        // Left side - rewind 10s
         this.video.currentTime -= 10;
         this.showTouchFeedback('backward');
       } else if (tapX > (screenWidth * 2) / 3) {
-        // Right side - forward 10s
         this.video.currentTime += 10;
         this.showTouchFeedback('forward');
       } else {
-        // Center - play/pause
         this.togglePlay();
       }
       lastTap = 0;
     } else {
       // Single tap
-      if (isControlsTap) {
-        // Tap on controls - just show them
-        this.showControls();
-      } else {
-        // Tap on video area - toggle controls visibility
-        const controlsVisible = controls.classList.contains('visible');
-        if (controlsVisible) {
+      lastTap = now;
+      
+      if (!isInteractiveElement) {
+        // Tap on video - toggle controls
+        if (controls.classList.contains('visible')) {
           this.hideControls();
         } else {
           this.showControls();
         }
       }
-      lastTap = now;
+      // If tap is on controls, showControls() is already called by event listener
     }
   });
 
-  // Prevent context menu on long press
-  this.video.addEventListener('contextmenu', (e) => {
-    e.preventDefault();
-  });
+  // Prevent context menu
+  this.video.addEventListener('contextmenu', (e) => e.preventDefault());
 }
 
       showTouchFeedback(type) {
