@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Player - Streamify</title>
   <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <script src="https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
   <style>
     * {
@@ -162,6 +163,18 @@
       opacity: 0.3;
       cursor: not-allowed;
     }
+	
+.cast-button {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+}
+
+.cast-button google-cast-launcher {
+  --disconnected-color: #fff;
+  --connected-color: #4285f4;
+}	
 
     .time-display {
       font-size: 14px;
@@ -598,17 +611,18 @@
           <span class="time-display" id="timeDisplay">0:00 / 0:00</span>
         </div>
 
-        <div class="controls-right">
-          <button class="control-btn small" id="episodesBtn">
-            <i class="fas fa-list"></i>
-          </button>
-          <button class="control-btn small" id="settingsBtn">
-            <i class="fas fa-cog"></i>
-          </button>
-          <button class="control-btn small" id="fullscreenBtn">
-            <i class="fas fa-expand"></i>
-          </button>
-        </div>
+<div class="controls-right">
+  <button class="control-btn small" id="episodesBtn">
+    <i class="fas fa-list"></i>
+  </button>
+  <button class="control-btn small" id="settingsBtn">
+    <i class="fas fa-cog"></i>
+  </button>
+  <div class="cast-button" id="castButton"></div>
+  <button class="control-btn small" id="fullscreenBtn">
+    <i class="fas fa-expand"></i>
+  </button>
+</div>
       </div>
     </div>
 
@@ -654,8 +668,11 @@
         this.qualitySetup = false;
         this.isFullscreen = false;
         this.initialLoad = false;
+		this.castSession = null;
+		this.castPlayer = null;
         
         this.init();
+		this.initializeCast();
       }
 
       loadFromStorage(key) {
@@ -688,6 +705,85 @@
           await this.initShow(this.showId, episodeId);
         }
       }
+	  
+initializeCast() {
+  window['__onGCastApiAvailable'] = (isAvailable) => {
+    if (isAvailable) {
+      const castContext = cast.framework.CastContext.getInstance();
+      
+      castContext.setOptions({
+        receiverApplicationId: chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID,
+        autoJoinPolicy: chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED
+      });
+
+      const castButton = document.getElementById('castButton');
+      const castButtonElement = document.createElement('google-cast-launcher');
+      castButton.appendChild(castButtonElement);
+
+      castContext.addEventListener(
+        cast.framework.CastContextEventType.SESSION_STATE_CHANGED,
+        (event) => this.onCastSessionChanged(event)
+      );
+    }
+  };
+}
+
+onCastSessionChanged(event) {
+  switch (event.sessionState) {
+    case cast.framework.SessionState.SESSION_STARTED:
+      this.castSession = cast.framework.CastContext.getInstance().getCurrentSession();
+      this.loadMediaToCast();
+      break;
+    case cast.framework.SessionState.SESSION_ENDED:
+      this.castSession = null;
+      this.castPlayer = null;
+      break;
+  }
+}
+
+loadMediaToCast() {
+  if (!this.castSession) return;
+
+  const hlsUrl = this.currentEpisode.stream?.thirdParty?.hlsUrl || 
+                 this.currentEpisode.stream?.hls?.high;
+  const poster = this.getImageByType(this.currentEpisode.imageInfo, 'bigpic') || '';
+  const title = this.currentEpisode.title || `Episode ${this.currentEpisode.sequence || '1'}`;
+
+  const mediaInfo = new chrome.cast.media.MediaInfo(hlsUrl, 'application/x-mpegURL');
+  
+  mediaInfo.metadata = new chrome.cast.media.GenericMediaMetadata();
+  mediaInfo.metadata.title = title;
+  if (poster) {
+    mediaInfo.metadata.images = [new chrome.cast.Image(poster)];
+  }
+
+  const request = new chrome.cast.media.LoadRequest(mediaInfo);
+  request.currentTime = this.video.currentTime;
+  request.autoplay = true;
+
+  this.castSession.loadMedia(request).then(
+    () => {
+      this.video.pause();
+      this.castPlayer = this.castSession.getMediaSession();
+      this.setupCastListeners();
+    },
+    (errorCode) => {
+      console.error('Cast load error:', errorCode);
+    }
+  );
+}
+
+setupCastListeners() {
+  if (!this.castPlayer) return;
+
+  this.castPlayer.addUpdateListener(() => {
+    if (this.castPlayer) {
+      const isPaused = this.castPlayer.playerState === chrome.cast.media.PlayerState.PAUSED;
+      const icon = document.getElementById('playPauseBtn').querySelector('i');
+      icon.className = isPaused ? 'fas fa-play' : 'fas fa-pause';
+    }
+  });
+}	  
 
       async initMovie(movieId) {
         if (!movieId) {
@@ -1469,13 +1565,20 @@ saveContinueWatching() {
         });
       }
 
-      togglePlay() {
-        if (this.video.paused) {
-          this.video.play();
-        } else {
-          this.video.pause();
-        }
-      }
+togglePlay() {
+  if (this.castPlayer) {
+    const controller = new cast.framework.RemotePlayerController(
+      new cast.framework.RemotePlayer()
+    );
+    controller.playOrPause();
+  } else {
+    if (this.video.paused) {
+      this.video.play();
+    } else {
+      this.video.pause();
+    }
+  }
+}
 
       onPlay() {
         this.isPlaying = true;
@@ -1518,11 +1621,21 @@ saveContinueWatching() {
         }
       }
 
-      seek(e) {
-        const rect = e.currentTarget.getBoundingClientRect();
-        const percent = (e.clientX - rect.left) / rect.width;
-        this.video.currentTime = percent * this.video.duration;
-      }
+seek(e) {
+  const rect = e.currentTarget.getBoundingClientRect();
+  const percent = (e.clientX - rect.left) / rect.width;
+  
+  if (this.castPlayer) {
+    const duration = this.castPlayer.duration;
+    const seekTime = percent * duration;
+    this.castPlayer.currentTime = seekTime;
+    const request = new chrome.cast.media.SeekRequest();
+    request.currentTime = seekTime;
+    this.castSession.getMediaSession().seek(request);
+  } else {
+    this.video.currentTime = percent * this.video.duration;
+  }
+}
 
       showProgressHover(e) {
         const rect = e.currentTarget.getBoundingClientRect();
