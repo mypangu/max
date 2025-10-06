@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Player - Streamify</title>
   <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
@@ -58,10 +58,19 @@
       pointer-events: none;
     }
 
-    .player-controls.visible {
-      opacity: 1 !important;
-      pointer-events: all !important;
-    }
+.player-controls.visible {
+  opacity: 1 !important;
+  pointer-events: all !important;
+  display: block !important;
+  visibility: visible !important;
+}
+
+/* Force controls to render properly */
+.player-controls {
+  will-change: opacity;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
 
     /* Progress Bar */
     .progress-container {
@@ -452,49 +461,64 @@
       opacity: 1;
     }
 
-    /* Mobile Adjustments */
-    @media (max-width: 768px) {
-      .player-controls {
-        padding: 15px 20px;
-        padding-bottom: 35px;
-      }
+/* Mobile Adjustments */
+@media (max-width: 768px) {
+  body {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
 
-      .control-btn {
-        font-size: 20px;
-      }
-
-      .time-display {
-        font-size: 12px;
-      }
-
-      .settings-menu {
-        right: 10px;
-        bottom: 90px;
-      }
-
-      .volume-control:hover .volume-slider {
-        width: 60px;
-      }
-
-      .episodes-list-overlay {
-        width: 100%;
-      }
-
-      .controls-row {
-        gap: 10px;
-      }
-
-      .controls-left,
-      .controls-right {
-        gap: 10px;
-      }
-
-      /* Hide skip buttons on mobile when not in fullscreen */
-      #skipBackBtn,
-      #skipForwardBtn {
-        display: none;
-      }
+  .player-controls {
+    padding: 15px 20px;
+    padding-bottom: 15px;
+    /* Use transform to move controls up above safe area */
+    transform: translateY(calc(-1 * env(safe-area-inset-bottom)));
+  }
+  
+  /* Alternative: Add safe area as margin if transform doesn't work */
+  @supports (padding-bottom: env(safe-area-inset-bottom)) {
+    .player-controls {
+      margin-bottom: env(safe-area-inset-bottom);
+      transform: none;
     }
+  }
+
+  .control-btn {
+    font-size: 20px;
+  }
+
+  .time-display {
+    font-size: 12px;
+  }
+
+  .settings-menu {
+    right: 10px;
+    bottom: calc(90px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .volume-control:hover .volume-slider {
+    width: 60px;
+  }
+
+  .episodes-list-overlay {
+    width: 100%;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .controls-row {
+    gap: 10px;
+  }
+
+  .controls-left,
+  .controls-right {
+    gap: 10px;
+  }
+
+  /* Hide skip buttons on mobile when not in fullscreen */
+  #skipBackBtn,
+  #skipForwardBtn {
+    display: none;
+  }
+}
 
     /* Show skip buttons in fullscreen on mobile */
     @media (max-width: 768px) {
@@ -656,16 +680,21 @@
           this.renderEpisodesList();
           
           // Show controls on page load with longer delay for mobile
-          setTimeout(() => {
-            this.showControls();
-            // Force visibility on mobile devices
-            if (window.innerWidth <= 768) {
-              const controls = document.getElementById('playerControls');
-              const topControls = document.getElementById('topControls');
-              controls.classList.add('visible');
-              topControls.classList.add('visible');
-            }
-          }, 500);
+// Show controls on page load - keep them visible initially
+setTimeout(() => {
+  this.initialLoad = true; // Flag to prevent auto-hide on first load
+  this.showControls();
+  // Force visibility on mobile devices
+  const controls = document.getElementById('playerControls');
+  const topControls = document.getElementById('topControls');
+  controls.classList.add('visible');
+  topControls.classList.add('visible');
+  
+  // Allow auto-hide after 5 seconds
+  setTimeout(() => {
+    this.initialLoad = false;
+  }, 5000);
+}, 500);
         } catch (error) {
           console.error('Init error:', error);
           alert('Failed to load episode');
@@ -1440,23 +1469,24 @@
         if (nextBtn) nextBtn.disabled = currentIndex === this.episodes.length - 1;
       }
 
-      showControls() {
-        const controls = document.getElementById('playerControls');
-        const topControls = document.getElementById('topControls');
-        
-        controls.classList.add('visible');
-        topControls.classList.add('visible');
-        
-        if (this.autoHideTimer) {
-          clearTimeout(this.autoHideTimer);
-        }
-        
-        if (this.isPlaying) {
-          this.autoHideTimer = setTimeout(() => {
-            this.hideControls();
-          }, 3000);
-        }
-      }
+showControls() {
+  const controls = document.getElementById('playerControls');
+  const topControls = document.getElementById('topControls');
+  
+  controls.classList.add('visible');
+  topControls.classList.add('visible');
+  
+  if (this.autoHideTimer) {
+    clearTimeout(this.autoHideTimer);
+  }
+  
+  // Don't auto-hide if initial load or if paused
+  if (this.isPlaying && !this.initialLoad) {
+    this.autoHideTimer = setTimeout(() => {
+      this.hideControls();
+    }, 3000);
+  }
+}
 
       hideControls() {
         const controls = document.getElementById('playerControls');
