@@ -121,6 +121,7 @@
   justify-content: space-between;
   gap: 15px;
   min-height: 50px;
+  margin-bottom: 0;  /* Add this - will be overridden on mobile */
   flex-shrink: 0;
   flex-wrap: nowrap;
 }
@@ -471,9 +472,11 @@
     font-size: 20px;
   }
   
-  .controls-row {
-    gap: 10px;
-  }
+.controls-row {
+  gap: 10px;
+  margin-bottom: max(0px, env(safe-area-inset-bottom));
+  padding-bottom: 5px;  /* Extra breathing room */
+}
   
   .controls-left,
   .controls-right {
