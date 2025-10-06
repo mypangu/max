@@ -1114,38 +1114,46 @@
     }
 
     // Load and display continue watching
-    function loadContinueWatching() {
-	
-      const grid = document.getElementById('continueWatchingGrid');
-      const section = document.getElementById('continueWatchingSection');
-      const keys = Object.keys(localStorage).filter(k => k.startsWith('continue-mv'));
+function loadContinueWatching() {
+  const grid = document.getElementById('continueWatchingGrid');
+  const section = document.getElementById('continueWatchingSection');
+  
+  // Read from 'continue-movies' storage key
+  const continueMoviesData = JSON.parse(localStorage.getItem('continue-movies') || '{}');
+  const movieIds = Object.keys(continueMoviesData);
 
-      if (keys.length === 0) {
-        section.style.display = 'none';
-        return;
-      }
+  if (movieIds.length === 0) {
+    section.style.display = 'none';
+    return;
+  }
 
-      const cards = keys.map(key => {
-        const progress = JSON.parse(localStorage.getItem(key));
-        const progressPercent = (progress.time / progress.duration) * 100;
-        
-        const movie = {
-          ...progress,
-          progressPercent,
-          resumeTime: progress.time
-        };
+  const cards = movieIds.map(movieId => {
+    const progress = continueMoviesData[movieId];
+    const progressPercent = Math.min(95, (progress.currentTime / progress.duration) * 100);
+    
+    const movie = {
+      id: movieId,
+      title: progress.title,
+      imageInfo: [{ type: 'portrait_large', url: progress.thumbnail }],
+      duration: progress.duration,
+      progressPercent: progressPercent,
+      resumeTime: progress.currentTime,
+      releaseDate: '', // Optional: add if available in progress data
+      rating: 0, // Optional: add if available in progress data
+      genres: [] // Optional: add if available in progress data
+    };
 
-        return createMovieCard(movie, 0, true);
-      }).join('');
+    return createMovieCard(movie, 0, true);
+  }).join('');
 
-      grid.innerHTML = cards;
-      section.style.display = 'block';
+  grid.innerHTML = cards;
+  section.style.display = 'block';
 
-      // Re-observe new elements for animation
-      grid.querySelectorAll('.fade-in').forEach(el => {
-        observer.observe(el);
-      });
-    }
+  // Re-observe new elements for animation
+  grid.querySelectorAll('.fade-in').forEach(el => {
+    observer.observe(el);
+  });
+}
 
     // Render categorized movies with CSS horizontal scroll
     function renderCategorizedMovies(movies) {
@@ -1336,26 +1344,46 @@
     }
 
     // Continue watching functions
-    function removeFromContinueWatching(movieId, event) {
-      event.stopPropagation(); // Prevent movie-card click
-      localStorage.removeItem(`continue-${movieId}`);
-      loadContinueWatching();
-      
-      // Haptic feedback
-      if (navigator.vibrate) {
-        navigator.vibrate(50);
-      }
-    }
+function removeFromContinueWatching(movieId, event) {
+  event.stopPropagation(); // Prevent movie-card click
+  
+  // Read current data
+  const continueMoviesData = JSON.parse(localStorage.getItem('continue-movies') || '{}');
+  
+  // Remove this specific movie
+  delete continueMoviesData[movieId];
+  
+  // Save back
+  localStorage.setItem('continue-movies', JSON.stringify(continueMoviesData));
+  
+  // Reload continue watching section
+  loadContinueWatching();
+  
+  // Haptic feedback
+  if (navigator.vibrate) {
+    navigator.vibrate(50);
+  }
+}
 
-    function openPlayerWithProgress(movieId, resumeTime) {
-      const allMovies = JSON.parse(localStorage.getItem('allMovies') || '[]');
-      const movie = allMovies.find(m => m.id === movieId);
-      if (movie) {
-        movie.resumeTime = resumeTime;
-        sessionStorage.setItem('selectedMovie', JSON.stringify(movie));
-        window.location.href = "player.html";
-      }
-    }
+function openPlayerWithProgress(movieId, resumeTime) {
+  // First try to find in current allMovies array
+  let movie = allMovies.find(m => m.id === movieId);
+  
+  // If not found, try from localStorage
+  if (!movie) {
+    const storedMovies = JSON.parse(localStorage.getItem('allMovies') || '[]');
+    movie = storedMovies.find(m => m.id === movieId);
+  }
+  
+  if (movie) {
+    movie.resumeTime = resumeTime;
+    sessionStorage.setItem('selectedMovie', JSON.stringify(movie));
+    window.location.href = `player.html?movieId=${movieId}`;
+  } else {
+    // If movie data not found, just navigate to player
+    window.location.href = `player.html?movieId=${movieId}`;
+  }
+}
 
     // Enhanced search functionality with performance optimization
     let searchTimeout;
