@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Player - Streamify</title>
   <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
@@ -45,23 +45,39 @@
     }
 
     /* Player Controls */
-    .player-controls {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: linear-gradient(transparent, rgba(0,0,0,0.8));
-      padding: 20px 30px;
-      opacity: 0;
-      transition: opacity 0.3s ease;
-      z-index: 10;
-      pointer-events: none;
-    }
+.player-controls {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(transparent, rgba(0,0,0,0.8));
+  padding: 20px 30px 20px 30px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 10;
+  pointer-events: none;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+}
 
-    .player-controls.visible {
-      opacity: 1;
-      pointer-events: all;
-    }
+.player-controls.visible {
+  opacity: 1 !important;
+  pointer-events: all !important;
+}
+
+/* Safe area support - applied to all devices */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .player-controls {
+    padding-bottom: calc(20px + env(safe-area-inset-bottom));
+  }
+}
+
+/* Force controls to render properly */
+.player-controls {
+  will-change: opacity;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
 
     /* Progress Bar */
     .progress-container {
@@ -107,24 +123,26 @@
     }
 
     /* Control Buttons */
-.controls-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 15px;
-  min-height: 40px;
-}
+    .controls-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 15px;
+      min-height: 50px;
+      flex-shrink: 0;
+      flex-wrap: nowrap;
+    }
 
-.controls-left,
-.controls-right {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  flex-wrap: nowrap;
-  min-height: 40px;
-  flex-shrink: 0;   /* prevent collapse */
-  min-width: 1px;   /* ensures it can't shrink to 0 */
-}
+    .controls-left,
+    .controls-right {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      flex-wrap: nowrap;
+      min-height: 50px;
+      flex-shrink: 0;
+      min-width: 1px;
+    }
 
     .control-btn {
       background: transparent;
@@ -253,8 +271,8 @@
     }
 
     .top-controls.visible {
-      opacity: 1;
-      pointer-events: all;
+      opacity: 1 !important;
+      pointer-events: all !important;
     }
 
     .episode-info h3 {
@@ -450,39 +468,67 @@
       opacity: 1;
     }
 
-    /* Mobile Adjustments */
-    @media (max-width: 768px) {
-      .player-controls {
-        padding: 20px 30px calc(20px + env(safe-area-inset-bottom));
-      }
-
-      .control-btn {
-        font-size: 20px;
-      }
-
-      .time-display {
-        font-size: 12px;
-      }
-
-      .settings-menu {
-        right: 10px;
-        bottom: 70px;
-      }
-
-      .volume-control:hover .volume-slider {
-        width: 60px;
-      }
-
-      .episodes-list-overlay {
-        width: 100%;
-      }
-
-      /* Hide skip buttons on mobile when not in fullscreen */
-      #skipBackBtn,
-      #skipForwardBtn {
-        display: none;
-      }
+/* Mobile Adjustments */
+@media (max-width: 768px) {
+  .player-controls {
+    padding: 15px 20px 15px 20px;
+  }
+  
+  @supports (padding-bottom: env(safe-area-inset-bottom)) {
+    .player-controls {
+      padding-bottom: calc(25px + env(safe-area-inset-bottom));
     }
+  }
+
+  .control-btn {
+    font-size: 20px;
+    padding: 8px;
+  }
+
+  .time-display {
+    font-size: 12px;
+  }
+
+  .settings-menu {
+    right: 10px;
+    bottom: 100px;
+  }
+  
+  @supports (bottom: env(safe-area-inset-bottom)) {
+    .settings-menu {
+      bottom: calc(100px + env(safe-area-inset-bottom));
+    }
+  }
+
+  .volume-control:hover .volume-slider {
+    width: 60px;
+  }
+
+  .episodes-list-overlay {
+    width: 100%;
+  }
+
+  .controls-row {
+    gap: 8px;
+    min-height: 50px;
+  }
+
+  .controls-left,
+  .controls-right {
+    gap: 8px;
+  }
+
+  /* Ensure progress bar has space */
+  .progress-container {
+    margin-bottom: 12px;
+  }
+
+  /* Hide skip buttons on mobile when not in fullscreen */
+  #skipBackBtn,
+  #skipForwardBtn {
+    display: none;
+  }
+}
 
     /* Show skip buttons in fullscreen on mobile */
     @media (max-width: 768px) {
@@ -643,10 +689,22 @@
           this.setupMobileSupport();
           this.renderEpisodesList();
           
-          // Show controls immediately on page load
-          setTimeout(() => {
-            this.showControls();
-          }, 100);
+          // Show controls on page load with longer delay for mobile
+// Show controls on page load - keep them visible initially
+setTimeout(() => {
+  this.initialLoad = true; // Flag to prevent auto-hide on first load
+  this.showControls();
+  // Force visibility on mobile devices
+  const controls = document.getElementById('playerControls');
+  const topControls = document.getElementById('topControls');
+  controls.classList.add('visible');
+  topControls.classList.add('visible');
+  
+  // Allow auto-hide after 5 seconds
+  setTimeout(() => {
+    this.initialLoad = false;
+  }, 5000);
+}, 500);
         } catch (error) {
           console.error('Init error:', error);
           alert('Failed to load episode');
@@ -683,10 +741,7 @@
           this.hls.on(Hls.Events.MANIFEST_PARSED, () => {
             document.getElementById('loadingSpinner').classList.remove('show');
             this.restoreContinueWatching();
-            
-            // Show controls initially before playing
             this.showControls();
-            
             this.video.play();
           });
 
@@ -717,10 +772,7 @@
         } else if (this.video.canPlayType('application/vnd.apple.mpegurl')) {
           this.video.src = hlsUrl;
           this.video.load();
-          
-          // Show controls initially
           this.showControls();
-          
           this.video.play();
         }
 
@@ -1056,16 +1108,10 @@
         this.video.onended = () => this.onEnded();
         this.video.onprogress = () => this.updateBuffer();
 
-        // Show controls on interaction
+        // Show controls on interaction (desktop only)
         const playerContainer = document.getElementById('playerContainer');
         
-        // Desktop: mousemove
         playerContainer.addEventListener('mousemove', () => {
-          this.showControls();
-        });
-
-        // Mobile: touchstart
-        playerContainer.addEventListener('touchstart', () => {
           this.showControls();
         });
 
@@ -1165,49 +1211,93 @@
         }
       }
 
-      setupMobileSupport() {
-        let lastTap = 0;
-        let doubleTapTimer = null;
+setupMobileSupport() {
+  const playerContainer = document.getElementById('playerContainer');
+  let lastTap = 0;
+  let singleTapTimeout = null;
 
-        this.video.addEventListener('touchend', (e) => {
-          const touchEndX = e.changedTouches[0].clientX;
-          const touchEndY = e.changedTouches[0].clientY;
-          const now = Date.now();
-          const timeSinceLastTap = now - lastTap;
+  playerContainer.addEventListener('click', (e) => {
+    // Skip if touch device (will be handled by touch events)
+    if ('ontouchstart' in window) return;
+  });
 
-          if (timeSinceLastTap < 300 && timeSinceLastTap > 0) {
-            // Double tap detected
-            clearTimeout(doubleTapTimer);
-            const screenWidth = window.innerWidth;
-            const tapX = touchEndX;
+  playerContainer.addEventListener('touchend', (e) => {
+    const now = Date.now();
+    const timeSinceLastTap = now - lastTap;
+    
+    // Check if tapped on interactive elements
+    const target = e.target;
+    const isControlElement = 
+      target.closest('.player-controls') ||
+      target.closest('.top-controls') ||
+      target.closest('.settings-menu') ||
+      target.closest('.episodes-list-overlay') ||
+      target.tagName === 'BUTTON' ||
+      target.tagName === 'INPUT';
 
-            if (tapX < screenWidth / 3) {
-              // Left side - rewind 10s
-              this.video.currentTime -= 10;
-              this.showTouchFeedback('backward');
-            } else if (tapX > (screenWidth * 2) / 3) {
-              // Right side - forward 10s
-              this.video.currentTime += 10;
-              this.showTouchFeedback('forward');
-            } else {
-              // Center - play/pause
-              this.togglePlay();
-            }
-            lastTap = 0;
-          } else {
-            // Single tap
-            lastTap = now;
-            doubleTapTimer = setTimeout(() => {
-              this.showControls();
-            }, 300);
-          }
-        });
+    // If tapped on controls, just keep them visible and return early
+    if (isControlElement) {
+      this.showControls();
+      return;
+    }
 
-        // Prevent context menu on long press
-        this.video.addEventListener('contextmenu', (e) => {
-          e.preventDefault();
-        });
+    // Check for double tap (on video area only)
+    if (timeSinceLastTap < 300 && timeSinceLastTap > 0) {
+      // DOUBLE TAP - skip forward/backward
+      clearTimeout(singleTapTimeout);
+      
+      const touchX = e.changedTouches[0].clientX;
+      const screenWidth = window.innerWidth;
+
+      if (touchX < screenWidth / 3) {
+        this.video.currentTime -= 10;
+        this.showTouchFeedback('backward');
+      } else if (touchX > (screenWidth * 2) / 3) {
+        this.video.currentTime += 10;
+        this.showTouchFeedback('forward');
+      } else {
+        this.togglePlay();
       }
+      
+      lastTap = 0;
+      return;
+    }
+
+    // SINGLE TAP on video area - toggle controls
+    lastTap = now;
+    
+    const controls = document.getElementById('playerControls');
+    const topControls = document.getElementById('topControls');
+    const areControlsVisible = controls.classList.contains('visible');
+    
+    if (areControlsVisible) {
+      // Controls are visible - hide them immediately
+      if (this.autoHideTimer) {
+        clearTimeout(this.autoHideTimer);
+      }
+      controls.classList.remove('visible');
+      topControls.classList.remove('visible');
+    } else {
+      // Controls are hidden - show them
+      if (this.autoHideTimer) {
+        clearTimeout(this.autoHideTimer);
+      }
+      controls.classList.add('visible');
+      topControls.classList.add('visible');
+      
+      // Auto-hide after 3 seconds if playing
+      if (this.isPlaying) {
+        this.autoHideTimer = setTimeout(() => {
+          controls.classList.remove('visible');
+          topControls.classList.remove('visible');
+        }, 3000);
+      }
+    }
+  });
+
+  // Prevent context menu
+  this.video.addEventListener('contextmenu', (e) => e.preventDefault());
+}
 
       showTouchFeedback(type) {
         const feedback = document.getElementById('touchFeedback');
@@ -1283,12 +1373,12 @@
         }
       }
 
-      onPlay() {
-        this.isPlaying = true;
-        document.getElementById('centerPlay').classList.remove('show');
-        document.getElementById('playPauseBtn').innerHTML = '<i class="fas fa-pause"></i>';
-        this.showControls();
-      }
+onPlay() {
+  this.isPlaying = true;
+  document.getElementById('centerPlay').classList.remove('show');
+  document.getElementById('playPauseBtn').innerHTML = '<i class="fas fa-pause"></i>';
+  // Don't call showControls here - it will be called by user interaction
+}
 
       onPause() {
         this.isPlaying = false;
@@ -1403,23 +1493,24 @@
         if (nextBtn) nextBtn.disabled = currentIndex === this.episodes.length - 1;
       }
 
-      showControls() {
-        const controls = document.getElementById('playerControls');
-        const topControls = document.getElementById('topControls');
-        
-        controls.classList.add('visible');
-        topControls.classList.add('visible');
-        
-        if (this.autoHideTimer) {
-          clearTimeout(this.autoHideTimer);
-        }
-        
-        if (this.isPlaying) {
-          this.autoHideTimer = setTimeout(() => {
-            this.hideControls();
-          }, 3000);
-        }
-      }
+showControls() {
+  const controls = document.getElementById('playerControls');
+  const topControls = document.getElementById('topControls');
+  
+  controls.classList.add('visible');
+  topControls.classList.add('visible');
+  
+  if (this.autoHideTimer) {
+    clearTimeout(this.autoHideTimer);
+  }
+  
+  // Don't auto-hide if initial load or if paused
+  if (this.isPlaying && !this.initialLoad) {
+    this.autoHideTimer = setTimeout(() => {
+      this.hideControls();
+    }, 3000);
+  }
+}
 
       hideControls() {
         const controls = document.getElementById('playerControls');
@@ -1450,17 +1541,6 @@
     }
 
     new StreamifyPlayer();
-	
-	 window.addEventListener('load', () => {
-    const controls = document.getElementById('playerControls');
-    // Wait for StreamifyPlayer to call showControls()
-    setTimeout(() => {
-      // Force reflow
-      controls.style.display = 'none';
-      void controls.offsetHeight;  // trigger layout calculation
-      controls.style.display = '';
-    }, 300);
-  });
   </script>
 </body>
 </html>

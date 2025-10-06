@@ -17,5 +17,25 @@
       "sizes": "512x512",
       "type": "image/png"
     }
+  ],
+  "shortcuts": [
+    {
+      "name": "Home",
+      "short_name": "Home",
+      "description": "Go to Movies page",
+      "url": "/index.html",
+      "icons": [
+        { "src": "/icons/favicon-32x32.png", "sizes": "32x32", "type": "image/svg+xml" }
+      ]
+    },
+    {
+      "name": "Stream",
+      "short_name": "Stream",
+      "description": "Go to Shows page",
+      "url": "/tvshows.html",
+      "icons": [
+        { "src": "/icons/favicon-32x32.png", "sizes": "32x32", "type": "image/svg+xml" }
+      ]
+    }
   ]
 }

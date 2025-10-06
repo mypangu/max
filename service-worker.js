@@ -1,10 +1,11 @@
-const CACHE_NAME = "0610250700"; // ✅ Increment this on each update
+const CACHE_NAME = "0610250800"; // ✅ Increment this on each update
 const ASSETS_TO_CACHE = [
   "/",
   "/index.html",
   "/tvshows.html",
   "/tvplayer.html",
   "/testplay.html",
+  "/player.html",
   "/recommended_movies.json",
   "/tvshows.json",
   "/icons/favicon.ico",

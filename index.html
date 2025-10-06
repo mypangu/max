@@ -1326,7 +1326,7 @@
         
         // Simulate navigation (replace with actual navigation)
         setTimeout(() => {
-          window.location.href = `testplay.html?id=${movie.id}`;
+          window.location.href = `player.html?movieId=${movie.id}`;
           if (movieCard) {
             movieCard.style.opacity = '';
             movieCard.style.transform = '';
@@ -1353,7 +1353,7 @@
       if (movie) {
         movie.resumeTime = resumeTime;
         sessionStorage.setItem('selectedMovie', JSON.stringify(movie));
-        window.location.href = "testplay.html";
+        window.location.href = "player.html";
       }
     }
 
