@@ -1320,7 +1320,7 @@
         this.currentEpisode = null;
         this.currentEpisodeIndex = 0;
         this.hls = null;
-        this.continueWatching = JSON.parse(localStorage.getItem('continueWatching') || '{}');
+        this.continueWatching = JSON.parse(localStorage.getItem('continue-shows') || '{}');
         this.settings = JSON.parse(localStorage.getItem('playerSettings') || '{"defaultAudioLang":"auto","autoPlayNext":"true","defaultSubtitle":"none","defaultQuality":"-1"}');
         this.showId = null;
         this.shareUrl = '';
@@ -1837,7 +1837,7 @@ setupProgressTracking(player, episode) {
       const showTitle = container?.title || this.currentShow?.title || 'Untitled Show';
 
       // Reload latest continue watching data
-      this.continueWatching = JSON.parse(localStorage.getItem('continueWatching') || '{}');
+	  this.continueWatching = JSON.parse(localStorage.getItem('continue-shows') || '{}');
 
       // Auto-remove if video almost completed (e.g. 95%)
       if (player.currentTime / player.duration >= 0.95) {
@@ -1857,7 +1857,7 @@ setupProgressTracking(player, episode) {
         };
       }
 
-      localStorage.setItem('continueWatching', JSON.stringify(this.continueWatching));
+      localStorage.setItem('continue-shows', JSON.stringify(this.continueWatching));
       this.continueWatchingData = this.continueWatching[this.showId];
     }
   };
@@ -1865,9 +1865,9 @@ setupProgressTracking(player, episode) {
   const clearProgress = () => {
     if (player.currentTime / player.duration > 0.95) {
       // Reload latest data first
-      this.continueWatching = JSON.parse(localStorage.getItem('continueWatching') || '{}');
+      this.continueWatching = JSON.parse(localStorage.getItem('continue-shows') || '{}');
       delete this.continueWatching[this.showId];
-      localStorage.setItem('continueWatching', JSON.stringify(this.continueWatching));
+      localStorage.setItem('continue-shows', JSON.stringify(this.continueWatching));
       
       // Clear local reference
       this.continueWatchingData = null;
@@ -2385,7 +2385,7 @@ case '7':
 
       updateContinueWatchingUI() {
         // Reload continue watching data from localStorage
-        this.continueWatching = JSON.parse(localStorage.getItem('continueWatching') || '{}');
+        this.continueWatching = JSON.parse(localStorage.getItem('continue-shows') || '{}');
         
         const continueData = this.continueWatching[this.showId];
         const continueBtn = document.getElementById('continueBtn');
@@ -2417,7 +2417,7 @@ continueBtnText.textContent = `Continue: S${seasonNum} E${episodeNum}`;
 
       updateEpisodesUI() {
         // Reload continue watching data
-        this.continueWatching = JSON.parse(localStorage.getItem('continueWatching') || '{}');
+        this.continueWatching = JSON.parse(localStorage.getItem('continue-shows') || '{}');
         
         // Update all episode items to reflect current progress
         document.querySelectorAll('.episode-item').forEach((element, index) => {
@@ -2689,7 +2689,7 @@ continueBtnText.textContent = `Continue: S${seasonNum} E${episodeNum}`;
           };
         }
         
-        localStorage.setItem('continueWatching', JSON.stringify(this.player.continueWatching));
+        localStorage.setItem('continue-shows', JSON.stringify(this.player.continueWatching));
       }
     });
   }
@@ -2886,7 +2886,7 @@ try {
 
     // Listen for localStorage changes from other tabs/windows
     window.addEventListener('storage', (e) => {
-      if (e.key === 'continueWatching' && player) {
+      if (e.key === 'continue-shows' && player) {
         player.updateContinueWatchingUI();
         player.updateEpisodesUI();
       }

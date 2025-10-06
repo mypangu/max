@@ -640,7 +640,9 @@
         this.episodes = [];
         this.showId = null;
         this.isMovie = false;
-        this.continueWatching = this.loadFromStorage('continueWatching') || {};
+        // Load both storage keys but keep them separate
+		this.continueMovies = this.loadFromStorage('continue-movies') || {};
+		this.continueShows = this.loadFromStorage('continue-shows') || {};
         this.settings = this.loadFromStorage('playerSettings') || {
           defaultAudioLang: 'auto',
           defaultQuality: '-1',
@@ -871,58 +873,66 @@
         return image ? image.url : (imageInfo[0]?.url || '');
       }
 
-      restoreContinueWatching() {
-        const continueData = this.continueWatching[this.isMovie ? this.currentEpisode.id : this.showId];
-        if (continueData) {
-          const shouldResume = this.isMovie ? 
-            continueData.currentTime > 30 : 
-            (continueData.episodeId === this.currentEpisode.id && continueData.currentTime > 30);
-          
-          if (shouldResume) {
-            this.video.currentTime = continueData.currentTime;
-          }
-        }
+restoreContinueWatching() {
+  if (this.isMovie) {
+    const continueData = this.continueMovies[this.currentEpisode.id];
+    if (continueData && continueData.currentTime > 30) {
+      this.video.currentTime = continueData.currentTime;
+    }
+  } else {
+    const continueData = this.continueShows[this.showId];
+    if (continueData && continueData.episodeId === this.currentEpisode.id && continueData.currentTime > 30) {
+      this.video.currentTime = continueData.currentTime;
+    }
+  }
+}
+
+saveContinueWatching() {
+  if (this.video.currentTime > 30 && this.video.duration > 0) {
+    const progress = this.video.currentTime / this.video.duration;
+
+    if (this.isMovie) {
+      const movieId = this.currentEpisode.id;
+      
+      if (progress >= 0.95) {
+        delete this.continueMovies[movieId];
+      } else {
+        this.continueMovies[movieId] = {
+          currentTime: this.video.currentTime,
+          duration: this.video.duration,
+          title: this.currentEpisode.title,
+          thumbnail: this.getImageByType(this.currentEpisode.imageInfo, 'portrait_large'),
+          timestamp: Date.now()
+        };
+      }
+      
+      this.saveToStorage('continue-movies', this.continueMovies);
+    } else {
+      if (progress >= 0.95) {
+        delete this.continueShows[this.showId];
+      } else {
+        const container = this.currentEpisode?.container?.container || {};
+        const portraitImg = container?.imageInfo?.find(img => img.type === 'portrait_large')?.url || '';
+        const showTitle = container?.title || 'Untitled Show';
+        const seasonNum = this.currentEpisode.container?.title?.match(/\d+/)?.[0] || '1';
+
+        this.continueShows[this.showId] = {
+          episodeId: this.currentEpisode.id,
+          episodeTitle: this.currentEpisode.title || `Episode ${this.currentEpisode.sequence}`,
+          episodeNum: this.currentEpisode.sequence,
+          seasonNum: seasonNum,
+          currentTime: this.video.currentTime,
+          duration: this.video.duration,
+          showTitle: showTitle,
+          thumbnail: portraitImg,
+          timestamp: Date.now()
+        };
       }
 
-      saveContinueWatching() {
-        if (this.video.currentTime > 30 && this.video.duration > 0) {
-          const progress = this.video.currentTime / this.video.duration;
-          const storageKey = this.isMovie ? this.currentEpisode.id : this.showId;
-
-          if (progress >= 0.95) {
-            delete this.continueWatching[storageKey];
-          } else {
-            if (this.isMovie) {
-              this.continueWatching[storageKey] = {
-                currentTime: this.video.currentTime,
-                duration: this.video.duration,
-                title: this.currentEpisode.title,
-                thumbnail: this.getImageByType(this.currentEpisode.imageInfo, 'portrait_large'),
-                timestamp: Date.now()
-              };
-            } else {
-              const container = this.currentEpisode?.container?.container || {};
-              const portraitImg = container?.imageInfo?.find(img => img.type === 'portrait_large')?.url || '';
-              const showTitle = container?.title || 'Untitled Show';
-              const seasonNum = this.currentEpisode.container?.title?.match(/\d+/)?.[0] || '1';
-
-              this.continueWatching[storageKey] = {
-                episodeId: this.currentEpisode.id,
-                episodeTitle: this.currentEpisode.title || `Episode ${this.currentEpisode.sequence}`,
-                episodeNum: this.currentEpisode.sequence,
-                seasonNum: seasonNum,
-                currentTime: this.video.currentTime,
-                duration: this.video.duration,
-                showTitle: showTitle,
-                thumbnail: portraitImg,
-                timestamp: Date.now()
-              };
-            }
-          }
-
-          this.saveToStorage('continueWatching', this.continueWatching);
-        }
-      }
+      this.saveToStorage('continue-shows', this.continueShows);
+    }
+  }
+}
 
       renderEpisodesList() {
         const container = document.getElementById('episodesList');

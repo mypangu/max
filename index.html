@@ -1118,7 +1118,7 @@
 	
       const grid = document.getElementById('continueWatchingGrid');
       const section = document.getElementById('continueWatchingSection');
-      const keys = Object.keys(localStorage).filter(k => k.startsWith('continue-'));
+      const keys = Object.keys(localStorage).filter(k => k.startsWith('continue-mv'));
 
       if (keys.length === 0) {
         section.style.display = 'none';

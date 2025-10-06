@@ -1697,7 +1697,7 @@ clearSearch.addEventListener('click', () => {
   
 <script>
 function renderContinueWatching() {
-  const data = JSON.parse(localStorage.getItem('continueWatching') || '{}');
+  const data = JSON.parse(localStorage.getItem('continue-shows') || '{}');
   const entries = Object.entries(data);
 
   if (entries.length === 0) {
@@ -1776,9 +1776,9 @@ card.innerHTML = `
   card.remove();
 
   // Update localStorage
-  const updated = JSON.parse(localStorage.getItem('continueWatching') || '{}');
+  const updated = JSON.parse(localStorage.getItem('continue-shows') || '{}');
   delete updated[showId];
-  localStorage.setItem('continueWatching', JSON.stringify(updated));
+  localStorage.setItem('continue-shows', JSON.stringify(updated));
 
   // If no more items, remove the entire section
   if (Object.keys(updated).length === 0) {
