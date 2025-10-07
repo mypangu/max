@@ -249,7 +249,7 @@
     .settings-submenu {
       position: absolute;
       right: 100%;
-      top: 0;
+      bottom: 0;
       background: rgba(0,0,0,0.95);
       border-radius: 8px;
       padding: 10px 0;
@@ -657,12 +657,7 @@
         // Load both storage keys but keep them separate
 		this.continueMovies = this.loadFromStorage('continue-movies') || {};
 		this.continueShows = this.loadFromStorage('continue-shows') || {};
-        this.settings = this.loadFromStorage('playerSettings') || {
-          defaultAudioLang: 'auto',
-          defaultQuality: '-1',
-          defaultSubtitle: 'none',
-          autoPlayNext: true
-        };
+		this.settings = this.initializeSettings();
         this.autoHideTimer = null;
         this.isPlaying = false;
         this.qualitySetup = false;
@@ -690,6 +685,39 @@
           console.warn('Storage save failed:', e);
         }
       }
+	  
+initializeSettings() {
+  const defaultSettings = {
+    defaultAudioLang: 'ta',
+    defaultQuality: '1080',
+    defaultSubtitle: 'none',
+    autoPlayNext: true
+  };
+
+  let settings = this.loadFromStorage('playerSettings');
+
+  if (!settings) {
+    // No settings exist, create them with defaults
+    this.saveToStorage('playerSettings', defaultSettings);
+    return defaultSettings;
+  }
+
+  // Settings exist, check if all required keys are present
+  let needsUpdate = false;
+  for (let key in defaultSettings) {
+    if (!(key in settings)) {
+      settings[key] = defaultSettings[key];
+      needsUpdate = true;
+    }
+  }
+
+  // Save back if we added missing keys
+  if (needsUpdate) {
+    this.saveToStorage('playerSettings', settings);
+  }
+
+  return settings;
+}	  
 
       async init() {
         const params = new URLSearchParams(window.location.search);
@@ -908,7 +936,8 @@ setupCastListeners() {
             maxBufferSize: 30 * 1000 * 1000,
             maxBufferHole: 0.5,
             enableWorker: true,
-            startLevel: -1
+            startLevel: -1,
+			subtitleDisplay: false
           });
 
           this.hls.loadSource(hlsUrl);
@@ -916,6 +945,10 @@ setupCastListeners() {
 
           this.hls.on(Hls.Events.MANIFEST_PARSED, () => {
             document.getElementById('loadingSpinner').classList.remove('show');
+			// Disable subtitles immediately on manifest load
+			if (this.hls) {
+				this.hls.subtitleTrack = -1;
+			}
             this.restoreContinueWatching();
             this.showControls();
             this.video.play().catch(() => {});
@@ -927,6 +960,8 @@ setupCastListeners() {
           });
 
           this.hls.on(Hls.Events.SUBTITLE_TRACKS_UPDATED, () => {
+		    // Force disable subtitles first to prevent autoselection
+			this.hls.subtitleTrack = -1;
             this.setupSubtitles();
             this.applyDefaultSubtitles();
           });
@@ -1105,11 +1140,13 @@ saveContinueWatching() {
       }
 
       applyDefaultQuality() {
-        if (!this.hls || !this.settings.defaultQuality || this.settings.defaultQuality === "-1") {
-          this.hls.currentLevel = -1;
-          document.getElementById('currentQuality').textContent = 'Auto';
-          return;
-        }
+if (!this.hls) return;
+
+if (!this.settings.defaultQuality || this.settings.defaultQuality === "-1" || this.settings.defaultQuality === "auto") {
+  this.hls.currentLevel = -1;
+  document.getElementById('currentQuality').textContent = 'Auto';
+  return;
+}
 
         const preferredHeight = parseInt(this.settings.defaultQuality);
         const preferredLevelIndex = this.hls.levels.findIndex(level => level.height === preferredHeight);
@@ -1139,7 +1176,8 @@ saveContinueWatching() {
         const langMap = {
           'ta': 'Tamil', 'te': 'Telugu', 'hi': 'Hindi', 'en': 'English',
           'ko': 'Korean', 'zh': 'Chinese', 'ja': 'Japanese', 'ml': 'Malayalam',
-          'kn': 'Kannada'
+          'kn': 'Kannada', 'as': 'Assamese', 'bho': 'Bhojpuri', 'bn': 'Bengali', 
+		  'gu': 'Gujarati', 'mr': 'Marathi', 'pa': 'Punjabi'
         };
 
         this.hls.audioTracks.forEach((track, i) => {
@@ -1167,8 +1205,9 @@ saveContinueWatching() {
         const langMap = {
           'ta': 'Tamil', 'te': 'Telugu', 'hi': 'Hindi', 'en': 'English',
           'ko': 'Korean', 'zh': 'Chinese', 'ja': 'Japanese', 'ml': 'Malayalam',
-          'kn': 'Kannada'
-        };
+          'kn': 'Kannada', 'as': 'Assamese', 'bho': 'Bhojpuri', 'bn': 'Bengali', 
+		  'gu': 'Gujarati', 'mr': 'Marathi', 'pa': 'Punjabi'
+        }; 
 
         if (this.settings.defaultAudioLang && this.settings.defaultAudioLang !== 'auto') {
           const preferredLang = this.settings.defaultAudioLang;
@@ -1244,6 +1283,9 @@ saveContinueWatching() {
 
       applyDefaultSubtitles() {
         if (!this.hls) return;
+		
+		// Force disable first to override AUTOSELECT/DEFAULT flags
+		this.hls.subtitleTrack = -1;
 
         if (this.settings.defaultSubtitle === 'none' || !this.settings.defaultSubtitle) {
           this.hls.subtitleTrack = -1;

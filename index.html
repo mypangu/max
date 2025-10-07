@@ -1385,39 +1385,6 @@ function openPlayerWithProgress(movieId, resumeTime) {
   }
 }
 
-// Simple fuzzy match - allows 1-2 character differences
-function fuzzyMatch(searchTerm, title) {
-  searchTerm = searchTerm.toLowerCase();
-  title = title.toLowerCase();
-  
-  // Exact or substring match
-  if (title.includes(searchTerm)) return true;
-  
-  // Check each word separately
-  const searchWords = searchTerm.split(' ');
-  const titleWords = title.split(' ');
-  
-  for (const searchWord of searchWords) {
-    if (searchWord.length < 3) continue; // Skip very short words
-    
-    for (const titleWord of titleWords) {
-      // Count matching characters
-      let matches = 0;
-      const minLength = Math.min(searchWord.length, titleWord.length);
-      
-      for (let i = 0; i < minLength; i++) {
-        if (searchWord[i] === titleWord[i]) matches++;
-      }
-      
-      // If 75% or more characters match at same position
-      const matchRatio = matches / searchWord.length;
-      if (matchRatio >= 0.75) return true;
-    }
-  }
-  
-  return false;
-}
-
     // Enhanced search functionality with performance optimization
     let searchTimeout;
     const searchInput = document.getElementById('searchInput');
@@ -1428,11 +1395,9 @@ function fuzzyMatch(searchTerm, title) {
       if (searchTerm === '') {
         renderCategorizedMovies(allMovies);
       } else {
-const filteredMovies = allMovies.filter(movie => 
-  fuzzyMatch(searchTerm, movie.title || '')
-);
-
-//(movie.title || '').toLowerCase().includes(searchTerm)
+		const filteredMovies = allMovies.filter(movie => 
+		(movie.title || '').toLowerCase().includes(searchTerm)
+	  );
         
         const container = document.getElementById('categoriesContainer');
         if (filteredMovies.length === 0) {
