@@ -1160,87 +1160,143 @@ if (!this.settings.defaultQuality || this.settings.defaultQuality === "-1" || th
         }
       }
 
-      setupAudio() {
-        const audioMenu = document.getElementById('audioMenu');
-        const existingSubmenu = audioMenu.querySelector('.settings-submenu');
-        if (existingSubmenu) existingSubmenu.remove();
+setupAudio() {
+  const audioMenu = document.getElementById('audioMenu');
+  const existingSubmenu = audioMenu.querySelector('.settings-submenu');
+  if (existingSubmenu) existingSubmenu.remove();
 
-        if (!this.hls || this.hls.audioTracks.length <= 1) {
-          document.getElementById('currentAudio').textContent = 'Default';
-          return;
-        }
+  const langMap = {
+    'ta': 'Tamil', 'te': 'Telugu', 'hi': 'Hindi', 'en': 'English',
+    'ko': 'Korean', 'zh': 'Chinese', 'ja': 'Japanese', 'ml': 'Malayalam',
+    'kn': 'Kannada', 'as': 'Assamese', 'bho': 'Bhojpuri', 'bn': 'Bengali', 
+    'gu': 'Gujarati', 'mr': 'Marathi', 'pa': 'Punjabi'
+  };
 
-        const submenu = document.createElement('div');
-        submenu.className = 'settings-submenu';
+  // Helper function to get language name from JSON data
+  const getLanguageFromData = () => {
+    if (this.currentEpisode && this.currentEpisode.languages && this.currentEpisode.languages.length > 0) {
+      return this.currentEpisode.languages[0]; // Return first language
+    }
+    return null;
+  };
 
-        const langMap = {
-          'ta': 'Tamil', 'te': 'Telugu', 'hi': 'Hindi', 'en': 'English',
-          'ko': 'Korean', 'zh': 'Chinese', 'ja': 'Japanese', 'ml': 'Malayalam',
-          'kn': 'Kannada', 'as': 'Assamese', 'bho': 'Bhojpuri', 'bn': 'Bengali', 
-		  'gu': 'Gujarati', 'mr': 'Marathi', 'pa': 'Punjabi'
-        };
+  // If only one audio track or no tracks
+  if (!this.hls || this.hls.audioTracks.length === 0) {
+    const jsonLang = getLanguageFromData();
+    document.getElementById('currentAudio').textContent = jsonLang || 'Default';
+    return;
+  }
 
-        this.hls.audioTracks.forEach((track, i) => {
-          const option = document.createElement('div');
-          option.className = 'settings-item';
-          const langName = langMap[track.lang] || track.name || `Audio ${i + 1}`;
-          option.textContent = langName;
-          option.onclick = () => {
-            this.hls.audioTrack = i;
-            document.getElementById('currentAudio').textContent = langName;
-            submenu.classList.remove('show');
-            document.getElementById('settingsMenu').classList.remove('show');
-          };
-          submenu.appendChild(option);
-        });
+  if (this.hls.audioTracks.length === 1) {
+    const track = this.hls.audioTracks[0];
+    let langName;
+    
+    // Try to get name from track
+    if (track.lang && langMap[track.lang]) {
+      langName = langMap[track.lang];
+    } else if (track.name && track.name !== 'stream_0' && !track.name.startsWith('stream_')) {
+      langName = track.name;
+    } else {
+      // Use JSON language data as fallback
+      const jsonLang = getLanguageFromData();
+      langName = jsonLang || 'Default';
+    }
+    
+    document.getElementById('currentAudio').textContent = langName;
+    return;
+  }
 
-        audioMenu.appendChild(submenu);
-        audioMenu.onmouseenter = () => submenu.classList.add('show');
-        audioMenu.onmouseleave = () => setTimeout(() => submenu.classList.remove('show'), 200);
+  // Multiple audio tracks - create menu
+  const submenu = document.createElement('div');
+  submenu.className = 'settings-submenu';
+
+  this.hls.audioTracks.forEach((track, i) => {
+    const option = document.createElement('div');
+    option.className = 'settings-item';
+    
+    let langName;
+    if (track.lang && langMap[track.lang]) {
+      langName = langMap[track.lang];
+    } else if (track.name && track.name !== 'stream_0' && !track.name.startsWith('stream_')) {
+      langName = track.name;
+    } else {
+      // Use JSON language data with track number
+      const jsonLang = getLanguageFromData();
+      langName = jsonLang ? `${jsonLang} ${i + 1}` : `Audio ${i + 1}`;
+    }
+    
+    option.textContent = langName;
+    option.onclick = () => {
+      this.hls.audioTrack = i;
+      document.getElementById('currentAudio').textContent = langName;
+      submenu.classList.remove('show');
+      document.getElementById('settingsMenu').classList.remove('show');
+    };
+    submenu.appendChild(option);
+  });
+
+  audioMenu.appendChild(submenu);
+  audioMenu.onmouseenter = () => submenu.classList.add('show');
+  audioMenu.onmouseleave = () => setTimeout(() => submenu.classList.remove('show'), 200);
+}
+
+applyDefaultAudio() {
+  if (!this.hls || this.hls.audioTracks.length === 0) return;
+
+  const langMap = {
+    'ta': 'Tamil', 'te': 'Telugu', 'hi': 'Hindi', 'en': 'English',
+    'ko': 'Korean', 'zh': 'Chinese', 'ja': 'Japanese', 'ml': 'Malayalam',
+    'kn': 'Kannada', 'as': 'Assamese', 'bho': 'Bhojpuri', 'bn': 'Bengali', 
+    'gu': 'Gujarati', 'mr': 'Marathi', 'pa': 'Punjabi'
+  };
+
+  // Helper function to get language name
+  const getLanguageName = (track, index) => {
+    if (track.lang && langMap[track.lang]) {
+      return langMap[track.lang];
+    } else if (track.name && track.name !== 'stream_0' && !track.name.startsWith('stream_')) {
+      return track.name;
+    } else {
+      // Use JSON language data as fallback
+      if (this.currentEpisode && this.currentEpisode.languages && this.currentEpisode.languages.length > 0) {
+        return this.currentEpisode.languages[0];
       }
+      return `Audio ${index + 1}`;
+    }
+  };
 
-      applyDefaultAudio() {
-        if (!this.hls || this.hls.audioTracks.length === 0) return;
+  if (this.settings.defaultAudioLang && this.settings.defaultAudioLang !== 'auto') {
+    const preferredLang = this.settings.defaultAudioLang;
+    let selectedIndex = this.hls.audioTracks.findIndex(track => track.lang === preferredLang);
 
-        const langMap = {
-          'ta': 'Tamil', 'te': 'Telugu', 'hi': 'Hindi', 'en': 'English',
-          'ko': 'Korean', 'zh': 'Chinese', 'ja': 'Japanese', 'ml': 'Malayalam',
-          'kn': 'Kannada', 'as': 'Assamese', 'bho': 'Bhojpuri', 'bn': 'Bengali', 
-		  'gu': 'Gujarati', 'mr': 'Marathi', 'pa': 'Punjabi'
-        }; 
-
-        if (this.settings.defaultAudioLang && this.settings.defaultAudioLang !== 'auto') {
-          const preferredLang = this.settings.defaultAudioLang;
-          let selectedIndex = this.hls.audioTracks.findIndex(track => track.lang === preferredLang);
-
-          if (selectedIndex === -1 && preferredLang === 'ta') {
-            const fallbackLangs = ['zh', 'ko', 'ja'];
-            for (let lang of fallbackLangs) {
-              selectedIndex = this.hls.audioTracks.findIndex(track => track.lang === lang);
-              if (selectedIndex !== -1) break;
-            }
-          }
-
-          if (selectedIndex !== -1) {
-            this.hls.audioTrack = selectedIndex;
-            const track = this.hls.audioTracks[selectedIndex];
-            const langName = langMap[track.lang] || track.name || `Audio ${selectedIndex + 1}`;
-            document.getElementById('currentAudio').textContent = langName;
-          } else {
-            this.hls.audioTrack = 0;
-            const track = this.hls.audioTracks[0];
-            const langName = langMap[track.lang] || track.name || 'Audio 1';
-            document.getElementById('currentAudio').textContent = langName;
-          }
-        } else {
-          if (this.hls.audioTracks.length > 0) {
-            this.hls.audioTrack = 0;
-            const track = this.hls.audioTracks[0];
-            const langName = langMap[track.lang] || track.name || 'Audio 1';
-            document.getElementById('currentAudio').textContent = langName;
-          }
-        }
+    if (selectedIndex === -1 && preferredLang === 'ta') {
+      const fallbackLangs = ['zh', 'ko', 'ja'];
+      for (let lang of fallbackLangs) {
+        selectedIndex = this.hls.audioTracks.findIndex(track => track.lang === lang);
+        if (selectedIndex !== -1) break;
       }
+    }
+
+    if (selectedIndex !== -1) {
+      this.hls.audioTrack = selectedIndex;
+      const track = this.hls.audioTracks[selectedIndex];
+      const langName = getLanguageName(track, selectedIndex);
+      document.getElementById('currentAudio').textContent = langName;
+    } else {
+      this.hls.audioTrack = 0;
+      const track = this.hls.audioTracks[0];
+      const langName = getLanguageName(track, 0);
+      document.getElementById('currentAudio').textContent = langName;
+    }
+  } else {
+    if (this.hls.audioTracks.length > 0) {
+      this.hls.audioTrack = 0;
+      const track = this.hls.audioTracks[0];
+      const langName = getLanguageName(track, 0);
+      document.getElementById('currentAudio').textContent = langName;
+    }
+  }
+}
 
       setupSubtitles() {
         const subtitleMenu = document.getElementById('subtitleMenu');
@@ -1529,7 +1585,7 @@ if (!this.settings.defaultQuality || this.settings.defaultQuality === "-1" || th
               this.autoHideTimer = setTimeout(() => {
                 controls.classList.remove('visible');
                 topControls.classList.remove('visible');
-              }, 3000);
+              }, 1000);
             }
           }
         });
@@ -1764,7 +1820,7 @@ seek(e) {
         if (this.isPlaying && !this.initialLoad) {
           this.autoHideTimer = setTimeout(() => {
             this.hideControls();
-          }, 3000);
+          }, 1000);
         }
       }
 
