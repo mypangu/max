@@ -164,33 +164,11 @@
       cursor: not-allowed;
     }
 	
-.cast-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  cursor: pointer;
-  position: relative;
-}
-
-.cast-button google-cast-launcher {
-  --disconnected-color: #fff;
-  --connected-color: #4285f4;
-  width: 24px;
-  height: 24px;
-}
-
-/* Fallback icon if Cast API not loaded */
-.cast-button i {
-  font-size: 18px;
-  color: #fff;
-}
-
-/* Hide fallback when Cast launcher loads */
-.cast-button google-cast-launcher + i {
-  display: none;
-}
+#castButton {
+  display: inline-block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}	
 
     .time-display {
       font-size: 14px;
@@ -407,6 +385,38 @@
     .episodes-header h3 {
       font-size: 20px;
     }
+	
+.season-selector {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 15px;
+  padding: 0 0 15px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.2);
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.season-btn {
+  background: rgba(255,255,255,0.1);
+  border: 2px solid transparent;
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s;
+  flex-shrink: 0;
+}
+
+.season-btn:hover {
+  background: rgba(255,255,255,0.2);
+}
+
+.season-btn.active {
+  background: rgba(229,9,20,0.2);
+  border-color: #e50914;
+}	
 
     .close-episodes-btn {
       background: transparent;
@@ -580,15 +590,16 @@
       <div></div>
     </div>
 
-    <div class="episodes-list-overlay" id="episodesListOverlay">
-      <div class="episodes-header">
-        <h3>Episodes</h3>
-        <button class="close-episodes-btn" id="closeEpisodesBtn">
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
-      <div id="episodesList"></div>
-    </div>
+<div class="episodes-list-overlay" id="episodesListOverlay">
+  <div class="episodes-header">
+    <h3>Seasons</h3>
+    <button class="close-episodes-btn" id="closeEpisodesBtn">
+      <i class="fas fa-times"></i>
+    </button>
+  </div>
+  <div class="season-selector" id="seasonSelector"></div>
+  <div id="episodesList"></div>
+</div>
 
     <div class="touch-feedback" id="touchFeedback">
       <i class="fas fa-play"></i>
@@ -631,9 +642,9 @@
   <button class="control-btn small" id="settingsBtn">
     <i class="fas fa-cog"></i>
   </button>
-  <div class="cast-button" id="castButton">
-  <i class="fas fa-cast" aria-hidden="true"></i>
-</div>
+<button class="control-btn small" id="castButton">
+  <i class="fas fa-cast"></i>
+</button>
   <button class="control-btn small" id="fullscreenBtn">
     <i class="fas fa-expand"></i>
   </button>
@@ -669,6 +680,7 @@
         this.episodes = [];
 		this.allEpisodes = [];
         this.showId = null;
+		this.currentSeasonId = null;
         this.isMovie = false;
         // Load both storage keys but keep them separate
 		this.continueMovies = this.loadFromStorage('continue-movies') || {};
@@ -681,6 +693,7 @@
         this.initialLoad = false;
 		this.castSession = null;
 		this.castPlayer = null;
+		this.wasFullscreenBeforeNavigation = false;
         
         this.init();
 		this.initializeCast();
@@ -735,65 +748,135 @@ initializeSettings() {
   return settings;
 }	  
 
-      async init() {
-        const params = new URLSearchParams(window.location.search);
-        this.showId = params.get('showId');
-        const episodeId = params.get('episodeId');
-        const movieId = params.get('movieId');
+async init() {
+  const params = new URLSearchParams(window.location.search);
+  this.showId = params.get('showId');
+  const episodeId = params.get('episodeId');
+  const movieId = params.get('movieId');
 
-        this.isMovie = !!movieId;
+  this.isMovie = !!movieId;
 
-        if (this.isMovie) {
-          await this.initMovie(movieId);
-        } else {
-          await this.initShow(this.showId, episodeId);
-        }
-      }
-	  
-initializeCast() {
-  window['__onGCastApiAvailable'] = (isAvailable) => {
-    if (isAvailable) {
-      const castContext = cast.framework.CastContext.getInstance();
-      
-      castContext.setOptions({
-        receiverApplicationId: chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID,
-        autoJoinPolicy: chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED
-      });
-
-      // Add cast button functionality
-      const castButtonContainer = document.getElementById('castButton');
-      if (castButtonContainer) {
-        // Clear existing content
-        castButtonContainer.innerHTML = '';
-        
-        // Create and append Google Cast launcher
-        const castButtonElement = document.createElement('google-cast-launcher');
-        castButtonContainer.appendChild(castButtonElement);
-      }
-
-      // Listen for session state changes
-      castContext.addEventListener(
-        cast.framework.CastContextEventType.SESSION_STATE_CHANGED,
-        (event) => this.onCastSessionChanged(event)
-      );
-    }
-  };
+  if (this.isMovie) {
+    await this.initMovie(movieId);
+  } else {
+    await this.initShow(this.showId, episodeId);
+  }
+  
+  // Restore fullscreen if needed
+  this.checkAndRestoreFullscreen();
 }
 
-onCastSessionChanged(event) {
-  switch (event.sessionState) {
-    case cast.framework.SessionState.SESSION_STARTED:
-      this.castSession = cast.framework.CastContext.getInstance().getCurrentSession();
-      this.loadMediaToCast();
-      break;
-    case cast.framework.SessionState.SESSION_ENDED:
-      this.castSession = null;
-      this.castPlayer = null;
-      break;
+checkAndRestoreFullscreen() {
+  const shouldRestoreFullscreen = sessionStorage.getItem('restoreFullscreen');
+  
+  if (shouldRestoreFullscreen === 'true') {
+    sessionStorage.removeItem('restoreFullscreen');
+    
+    // Wait for video metadata to load before requesting fullscreen
+    const attemptFullscreen = () => {
+      const container = document.getElementById('playerContainer');
+      
+      // User gesture is required, so we'll show a prompt
+      const enterFullscreen = () => {
+        if (container.requestFullscreen) {
+          container.requestFullscreen().then(() => {
+            console.log('Fullscreen restored');
+            this.isFullscreen = true;
+            document.getElementById('fullscreenBtn').innerHTML = '<i class="fas fa-compress"></i>';
+            
+            if (screen.orientation && screen.orientation.lock) {
+              screen.orientation.lock('landscape').catch(() => {});
+            }
+          }).catch(err => {
+            console.log('Fullscreen restore failed:', err);
+          });
+        } else if (container.webkitRequestFullscreen) {
+          container.webkitRequestFullscreen();
+          this.isFullscreen = true;
+          document.getElementById('fullscreenBtn').innerHTML = '<i class="fas fa-compress"></i>';
+        }
+      };
+      
+      // Try to enter fullscreen when video starts playing
+      this.video.addEventListener('playing', enterFullscreen, { once: true });
+      
+      // Also try after a delay
+      setTimeout(enterFullscreen, 1000);
+    };
+    
+    // Wait for video to be ready
+    if (this.video.readyState >= 2) {
+      attemptFullscreen();
+    } else {
+      this.video.addEventListener('loadedmetadata', attemptFullscreen, { once: true });
+    }
   }
 }
 
-loadMediaToCast() {
+initializeCast() {
+  const castButton = document.getElementById('castButton');
+  
+  // Force cast button to be visible immediately
+  if (castButton) {
+    castButton.style.display = 'inline-block';
+    castButton.style.opacity = '1';
+    castButton.style.visibility = 'visible';
+  }
+  
+  // Set up Cast API callback
+  window['__onGCastApiAvailable'] = (isAvailable) => {
+    console.log('Cast API available:', isAvailable);
+    if (isAvailable) {
+      this.setupCastFramework();
+    } else {
+      console.warn('Cast API not available');
+    }
+  };
+  
+  // Manual cast button click handler as fallback
+  castButton.addEventListener('click', () => {
+    if (window.cast && window.cast.framework) {
+      const castContext = cast.framework.CastContext.getInstance();
+      castContext.requestSession();
+    } else {
+      console.log('Cast API not loaded yet');
+    }
+  });
+}
+
+setupCastFramework() {
+  try {
+    const castContext = cast.framework.CastContext.getInstance();
+    
+    castContext.setOptions({
+      receiverApplicationId: chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID,
+      autoJoinPolicy: chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED
+    });
+
+    castContext.addEventListener(
+      cast.framework.CastContextEventType.SESSION_STATE_CHANGED,
+      (event) => {
+        switch (event.sessionState) {
+          case cast.framework.SessionState.SESSION_STARTED:
+          case cast.framework.SessionState.SESSION_RESUMED:
+            this.castSession = castContext.getCurrentSession();
+            this.startCasting();
+            break;
+          case cast.framework.SessionState.SESSION_ENDED:
+            this.castSession = null;
+            this.castPlayer = null;
+            break;
+        }
+      }
+    );
+    
+    console.log('Cast framework initialized');
+  } catch (error) {
+    console.error('Cast framework error:', error);
+  }
+}
+
+startCasting() {
   if (!this.castSession) return;
 
   const hlsUrl = this.currentEpisode.stream?.thirdParty?.hlsUrl || 
@@ -815,26 +898,19 @@ loadMediaToCast() {
 
   this.castSession.loadMedia(request).then(
     () => {
+      console.log('Media loaded to Cast device');
       this.video.pause();
       this.castPlayer = this.castSession.getMediaSession();
-      this.setupCastListeners();
+      
+      // Update button icon
+      const castBtn = document.getElementById('castButton');
+      castBtn.querySelector('i').className = 'fas fa-cast';
+      castBtn.style.color = '#4285f4';
     },
     (errorCode) => {
       console.error('Cast load error:', errorCode);
     }
   );
-}
-
-setupCastListeners() {
-  if (!this.castPlayer) return;
-
-  this.castPlayer.addUpdateListener(() => {
-    if (this.castPlayer) {
-      const isPaused = this.castPlayer.playerState === chrome.cast.media.PlayerState.PAUSED;
-      const icon = document.getElementById('playPauseBtn').querySelector('i');
-      icon.className = isPaused ? 'fas fa-play' : 'fas fa-pause';
-    }
-  });
 }	  
 
       async initMovie(movieId) {
@@ -902,13 +978,15 @@ async initShow(showId, episodeId) {
     
     this.currentEpisode = this.allEpisodes.find(ep => ep.id === episodeId);
     if (!this.currentEpisode) throw new Error('Episode not found');
+	// Set current season
+	this.currentSeasonId = this.currentEpisode.container?.id;
     // Filter episodes for CURRENT SEASON only
-    const currentSeasonId = this.currentEpisode.container?.id;
-    this.episodes = this.allEpisodes.filter(ep => ep.container?.id === currentSeasonId);
+	this.episodes = this.allEpisodes.filter(ep => ep.container?.id === this.currentSeasonId);
     this.loadEpisode();
     this.setupEventListeners();
     this.setupKeyboardShortcuts();
     this.setupMobileSupport();
+	this.renderSeasonSelector();
     this.renderEpisodesList();
     this.showInitialControls();
   } catch (error) {
@@ -1107,17 +1185,44 @@ saveContinueWatching() {
   }
 }
 
+renderSeasonSelector() {
+  const container = document.getElementById('seasonSelector');
+  if (!container) return;
+  
+  container.innerHTML = '';
+  
+  // Get unique seasons
+  const seasons = [...new Set(this.allEpisodes.map(ep => ep.container?.id))]
+    .filter(Boolean)
+    .map(seasonId => {
+      const ep = this.allEpisodes.find(e => e.container?.id === seasonId);
+      return {
+        id: seasonId,
+        title: ep.container?.title || 'Season',
+        number: ep.container?.title?.match(/\d+/)?.[0] || '1'
+      };
+    })
+    .sort((a, b) => parseInt(a.number) - parseInt(b.number));
+  
+  seasons.forEach(season => {
+    const btn = document.createElement('button');
+    btn.className = `season-btn ${season.id === this.currentSeasonId ? 'active' : ''}`;
+    btn.textContent = season.title;
+    btn.onclick = () => {
+      this.currentSeasonId = season.id;
+      this.episodes = this.allEpisodes.filter(ep => ep.container?.id === season.id);
+      this.renderSeasonSelector();
+      this.renderEpisodesList();
+    };
+    container.appendChild(btn);
+  });
+}
+
       renderEpisodesList() {
         const container = document.getElementById('episodesList');
         container.innerHTML = '';
 
-        const currentSeasonNum = this.currentEpisode.container?.title?.match(/\d+/)?.[0] || '1';
-        const seasonEpisodes = this.episodes.filter(ep => {
-          const seasonNum = ep.container?.title?.match(/\d+/)?.[0] || '1';
-          return seasonNum === currentSeasonNum;
-        });
-
-        seasonEpisodes.forEach(episode => {
+        this.episodes.forEach(episode => {
           const card = document.createElement('div');
           card.className = `episode-card ${episode.id === this.currentEpisode.id ? 'active' : ''}`;
           
@@ -1135,11 +1240,38 @@ saveContinueWatching() {
             </div>
           `;
 
-          card.onclick = () => {
-            if (episode.id !== this.currentEpisode.id) {
-              window.location.href = `player.html?showId=${this.showId}&episodeId=${episode.id}`;
-            }
-          };
+card.onclick = () => {
+  if (episode.id !== this.currentEpisode.id) {
+    // Check if in fullscreen
+    const wasFullscreen = !!(document.fullscreenElement || document.webkitFullscreenElement);
+    
+    // Save current progress
+    this.saveContinueWatching();
+    
+    // Destroy current HLS instance
+    if (this.hls) {
+      this.hls.destroy();
+      this.hls = null;
+    }
+    
+    // Update current episode
+    this.currentEpisode = episode;
+    this.qualitySetup = false;
+    
+    // Update URL without reloading page
+    const newUrl = `${window.location.pathname}?showId=${this.showId}&episodeId=${episode.id}`;
+    window.history.pushState({ episodeId: episode.id }, '', newUrl);
+    
+    // Close episodes overlay
+    document.getElementById('episodesListOverlay').classList.remove('show');
+    
+    // Load new episode (this keeps fullscreen active!)
+    this.loadEpisode();
+    this.renderEpisodesList();
+	this.renderSeasonSelector();
+    this.updateNavigation();
+  }
+};
 
           container.appendChild(card);
         });
@@ -1447,13 +1579,25 @@ if (!this.isMovie) {
         this.setupSpeedControl();
         this.setupVideoFit();
 
-        document.getElementById('backBtn').onclick = () => {
-          if (this.isMovie) {
-            window.location.href = 'index.html';
-          } else {
-            window.location.href = `tvplayer.html?id=${this.showId}`;
-          }
-        };
+document.getElementById('backBtn').onclick = () => {
+  // Clear fullscreen flag when manually navigating away
+  sessionStorage.removeItem('restoreFullscreen');
+  
+  // Exit fullscreen if active
+  if (document.fullscreenElement || document.webkitFullscreenElement) {
+    if (document.exitFullscreen) {
+      document.exitFullscreen();
+    } else if (document.webkitExitFullscreen) {
+      document.webkitExitFullscreen();
+    }
+  }
+  
+  if (this.isMovie) {
+    window.location.href = 'index.html';
+  } else {
+    window.location.href = `tvplayer.html?id=${this.showId}`;
+  }
+};
 
         this.video.ontimeupdate = () => this.updateProgress();
         this.video.onpause = () => this.onPause();
@@ -1706,11 +1850,13 @@ if (!this.isMovie) {
       }
 
 togglePlay() {
-  if (this.castPlayer) {
-    const controller = new cast.framework.RemotePlayerController(
-      new cast.framework.RemotePlayer()
-    );
-    controller.playOrPause();
+  if (this.castSession && this.castPlayer) {
+    const isPaused = this.castPlayer.playerState === chrome.cast.media.PlayerState.PAUSED;
+    if (isPaused) {
+      this.castPlayer.play(new chrome.cast.media.PlayRequest());
+    } else {
+      this.castPlayer.pause(new chrome.cast.media.PauseRequest());
+    }
   } else {
     if (this.video.paused) {
       this.video.play();
@@ -1823,16 +1969,36 @@ seek(e) {
         }
       }
 
-playNext() {
+async playNext() {
   const currentIndex = this.episodes.findIndex(ep => ep.id === this.currentEpisode.id);
   
-  // Check if there's a next episode in the current season
   if (currentIndex < this.episodes.length - 1) {
     const nextEpisode = this.episodes[currentIndex + 1];
-    window.location.href = `player.html?showId=${this.showId}&episodeId=${nextEpisode.id}`;
+    
+    // Save current progress
+    this.saveContinueWatching();
+    
+    // Destroy current HLS instance
+    if (this.hls) {
+      this.hls.destroy();
+      this.hls = null;
+    }
+    
+    // Update current episode
+    this.currentEpisode = nextEpisode;
+    this.qualitySetup = false;
+    
+    // Update URL without reloading page
+    const newUrl = `${window.location.pathname}?showId=${this.showId}&episodeId=${nextEpisode.id}`;
+    window.history.pushState({ episodeId: nextEpisode.id }, '', newUrl);
+    
+    // Load new episode (this keeps fullscreen active!)
+    this.loadEpisode();
+    this.renderEpisodesList();
+	this.renderSeasonSelector();
+    this.updateNavigation();
+    
   } else {
-    // We're at the end of the season
-    // Optionally show a message or do nothing
     console.log('End of season reached');
   }
 }
