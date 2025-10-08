@@ -851,15 +851,14 @@ initializeCast() {
   }
   
   // Set up Cast API callback
-window['__onGCastApiAvailable'] = (isAvailable) => {
-  if (isAvailable) {
-    cast.framework.CastContext.getInstance().setOptions({
-      receiverApplicationId: chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID,
-      autoJoinPolicy: chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED
-    });
-    document.getElementById('castButton').style.display = 'inline-flex';
-  }
-};
+  window['__onGCastApiAvailable'] = (isAvailable) => {
+    console.log('Cast API available:', isAvailable);
+    if (isAvailable) {
+      this.setupCastFramework();
+    } else {
+      console.warn('Cast API not available');
+    }
+  };
   
   // Manual cast button click handler as fallback
   castButton.addEventListener('click', () => {
