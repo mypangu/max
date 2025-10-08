@@ -165,16 +165,32 @@
     }
 	
 .cast-button {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 24px;
   height: 24px;
   cursor: pointer;
+  position: relative;
 }
 
 .cast-button google-cast-launcher {
   --disconnected-color: #fff;
   --connected-color: #4285f4;
-}	
+  width: 24px;
+  height: 24px;
+}
+
+/* Fallback icon if Cast API not loaded */
+.cast-button i {
+  font-size: 18px;
+  color: #fff;
+}
+
+/* Hide fallback when Cast launcher loads */
+.cast-button google-cast-launcher + i {
+  display: none;
+}
 
     .time-display {
       font-size: 14px;
@@ -586,30 +602,27 @@
       </div>
 
       <div class="controls-row">
-        <div class="controls-left">
-          <button class="control-btn small" id="prevEpisodeBtn" title="Previous Episode">
-            <i class="fas fa-step-backward"></i>
-          </button>
-          <button class="control-btn" id="playPauseBtn">
-            <i class="fas fa-play"></i>
-          </button>
-          <button class="control-btn small" id="nextEpisodeBtn" title="Next Episode">
-            <i class="fas fa-step-forward"></i>
-          </button>
-          <button class="control-btn small" id="skipBackBtn">
-            <i class="fas fa-rotate-left"></i>
-          </button>
-          <button class="control-btn small" id="skipForwardBtn">
-            <i class="fas fa-rotate-right"></i>
-          </button>
-          <div class="volume-control">
-            <button class="control-btn small" id="volumeBtn">
-              <i class="fas fa-volume-up"></i>
-            </button>
-            <input type="range" class="volume-slider" id="volumeSlider" min="0" max="100" value="100">
-          </div>
-          <span class="time-display" id="timeDisplay">0:00 / 0:00</span>
-        </div>
+<div class="controls-left">
+  <button class="control-btn" id="playPauseBtn">
+    <i class="fas fa-play"></i>
+  </button>
+  <button class="control-btn small" id="skipBackBtn">
+    <i class="fas fa-rotate-left"></i>
+  </button>
+  <button class="control-btn small" id="skipForwardBtn">
+    <i class="fas fa-rotate-right"></i>
+  </button>
+  <div class="volume-control">
+    <button class="control-btn small" id="volumeBtn">
+      <i class="fas fa-volume-up"></i>
+    </button>
+    <input type="range" class="volume-slider" id="volumeSlider" min="0" max="100" value="100">
+  </div>
+  <span class="time-display" id="timeDisplay">0:00 / 0:00</span>
+  <button class="control-btn small" id="nextEpisodeBtn" title="Next Episode">
+    <i class="fas fa-step-forward"></i>
+  </button>
+</div>
 
 <div class="controls-right">
   <button class="control-btn small" id="episodesBtn">
@@ -618,7 +631,9 @@
   <button class="control-btn small" id="settingsBtn">
     <i class="fas fa-cog"></i>
   </button>
-  <div class="cast-button" id="castButton"></div>
+  <div class="cast-button" id="castButton">
+  <i class="fas fa-cast" aria-hidden="true"></i>
+</div>
   <button class="control-btn small" id="fullscreenBtn">
     <i class="fas fa-expand"></i>
   </button>
@@ -745,10 +760,18 @@ initializeCast() {
         autoJoinPolicy: chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED
       });
 
-      const castButton = document.getElementById('castButton');
-      const castButtonElement = document.createElement('google-cast-launcher');
-      castButton.appendChild(castButtonElement);
+      // Add cast button functionality
+      const castButtonContainer = document.getElementById('castButton');
+      if (castButtonContainer) {
+        // Clear existing content
+        castButtonContainer.innerHTML = '';
+        
+        // Create and append Google Cast launcher
+        const castButtonElement = document.createElement('google-cast-launcher');
+        castButtonContainer.appendChild(castButtonElement);
+      }
 
+      // Listen for session state changes
       castContext.addEventListener(
         cast.framework.CastContextEventType.SESSION_STATE_CHANGED,
         (event) => this.onCastSessionChanged(event)
@@ -910,15 +933,13 @@ async initShow(showId, episodeId) {
         }, 500);
       }
 
-      hideEpisodeControls() {
-        const prevBtn = document.getElementById('prevEpisodeBtn');
-        const nextBtn = document.getElementById('nextEpisodeBtn');
-        const episodesBtn = document.getElementById('episodesBtn');
-        
-        if (prevBtn) prevBtn.style.display = 'none';
-        if (nextBtn) nextBtn.style.display = 'none';
-        if (episodesBtn) episodesBtn.style.display = 'none';
-      }
+hideEpisodeControls() {
+  const nextBtn = document.getElementById('nextEpisodeBtn');
+  const episodesBtn = document.getElementById('episodesBtn');
+  
+  if (nextBtn) nextBtn.style.display = 'none';
+  if (episodesBtn) episodesBtn.style.display = 'none';
+}
 
       loadEpisode() {
         document.getElementById('loadingSpinner').classList.add('show');
@@ -1400,10 +1421,9 @@ applyDefaultAudio() {
         document.getElementById('skipBackBtn').onclick = () => this.video.currentTime -= 10;
         document.getElementById('skipForwardBtn').onclick = () => this.video.currentTime += 10;
 
-        if (!this.isMovie) {
-          document.getElementById('prevEpisodeBtn').onclick = () => this.playPrevious();
-          document.getElementById('nextEpisodeBtn').onclick = () => this.playNext();
-        }
+if (!this.isMovie) {
+  document.getElementById('nextEpisodeBtn').onclick = () => this.playNext();
+}
 
         document.getElementById('volumeBtn').onclick = () => this.toggleMute();
         document.getElementById('volumeSlider').oninput = (e) => this.video.volume = e.target.value / 100;
@@ -1639,20 +1659,24 @@ applyDefaultAudio() {
           switch(e.key) {
             case ' ':
             case 'k':
+			case '5':
               e.preventDefault();
               this.togglePlay();
               break;
             case 'ArrowLeft':
             case 'j':
+			case '4':
               e.preventDefault();
               this.video.currentTime -= 10;
               break;
             case 'ArrowRight':
             case 'l':
+			case '6':
               e.preventDefault();
               this.video.currentTime += 10;
               break;
             case 'f':
+			case '8':
               e.preventDefault();
               this.toggleFullscreen();
               break;
@@ -1661,23 +1685,20 @@ applyDefaultAudio() {
               this.toggleMute();
               break;
             case 'ArrowUp':
+			case '+':
               e.preventDefault();
               this.video.volume = Math.min(1, this.video.volume + 0.1);
               break;
             case 'ArrowDown':
+			case '-':
               e.preventDefault();
               this.video.volume = Math.max(0, this.video.volume - 0.1);
               break;
             case 'n':
+			case '9':
               if (!this.isMovie) {
                 e.preventDefault();
                 this.playNext();
-              }
-              break;
-            case 'p':
-              if (!this.isMovie) {
-                e.preventDefault();
-                this.playPrevious();
               }
               break;
           }
@@ -1826,14 +1847,12 @@ playPrevious() {
   }
 }
 
-      updateNavigation() {
-        const currentIndex = this.episodes.findIndex(ep => ep.id === this.currentEpisode.id);
-        const prevBtn = document.getElementById('prevEpisodeBtn');
-        const nextBtn = document.getElementById('nextEpisodeBtn');
-        
-        if (prevBtn) prevBtn.disabled = currentIndex === 0;
-        if (nextBtn) nextBtn.disabled = currentIndex === this.episodes.length - 1;
-      }
+updateNavigation() {
+  const currentIndex = this.episodes.findIndex(ep => ep.id === this.currentEpisode.id);
+  const nextBtn = document.getElementById('nextEpisodeBtn');
+  
+  if (nextBtn) nextBtn.disabled = currentIndex === this.episodes.length - 1;
+}
 
       showControls() {
         const controls = document.getElementById('playerControls');
