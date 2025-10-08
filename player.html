@@ -164,11 +164,18 @@
       cursor: not-allowed;
     }
 	
-#castButton {
-  display: inline-block !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-}	
+google-cast-launcher {
+  --discovery-button-color: #ffffff;
+  --discovery-button-active-color: #4285f4;
+  --discovery-button-size: 30px;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  background: none;     /* optional */
+  border: none;         /* optional */
+}
 
     .time-display {
       font-size: 14px;
@@ -567,6 +574,27 @@
         display: inline-block !important;
       }
     }
+	
+	@media (max-width: 768px) {
+  .player-container:-webkit-full-screen #castButton,
+  .player-container:fullscreen #castButton {
+    display: inline-block !important;
+  }
+}
+
+@media (max-width: 768px) {
+  google-cast-launcher {
+    --discovery-button-size: 25px;
+    width: 25px;
+    height: 25px;
+  }
+}
+
+google-cast-launcher {
+  --discovery-button-color: #fff !important;
+}
+
+
   </style>
 </head>
 <body>
@@ -642,9 +670,8 @@
   <button class="control-btn small" id="settingsBtn">
     <i class="fas fa-cog"></i>
   </button>
-<button class="control-btn small" id="castButton">
-  <i class="fas fa-cast"></i>
-</button>
+<google-cast-launcher id="castButton" buttontype="icon"></google-cast-launcher>
+
   <button class="control-btn small" id="fullscreenBtn">
     <i class="fas fa-expand"></i>
   </button>
@@ -824,14 +851,15 @@ initializeCast() {
   }
   
   // Set up Cast API callback
-  window['__onGCastApiAvailable'] = (isAvailable) => {
-    console.log('Cast API available:', isAvailable);
-    if (isAvailable) {
-      this.setupCastFramework();
-    } else {
-      console.warn('Cast API not available');
-    }
-  };
+window['__onGCastApiAvailable'] = (isAvailable) => {
+  if (isAvailable) {
+    cast.framework.CastContext.getInstance().setOptions({
+      receiverApplicationId: chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID,
+      autoJoinPolicy: chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED
+    });
+    document.getElementById('castButton').style.display = 'inline-flex';
+  }
+};
   
   // Manual cast button click handler as fallback
   castButton.addEventListener('click', () => {
@@ -1039,6 +1067,9 @@ hideEpisodeControls() {
         
         document.getElementById('episodeTitle').textContent = title;
         document.getElementById('episodeMeta').textContent = metaText;
+		
+		// Update page title
+		document.title = `${title} - Streamify`;
 
         const hlsUrl = this.currentEpisode.stream?.thirdParty?.hlsUrl || 
                        this.currentEpisode.stream?.hls?.high;

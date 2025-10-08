@@ -1418,6 +1418,8 @@ if (rawRating) {
         document.getElementById('headerTitle').textContent = title;
         document.getElementById('showTitle').textContent = title;
         document.getElementById('showDescription').textContent = description;
+		
+		document.title = `${title} - Streamify`;
         
         if (poster) {
           document.getElementById('heroBg').src = poster;
