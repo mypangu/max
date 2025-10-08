@@ -652,6 +652,7 @@
         this.hls = null;
         this.currentEpisode = null;
         this.episodes = [];
+		this.allEpisodes = [];
         this.showId = null;
         this.isMovie = false;
         // Load both storage keys but keep them separate
@@ -840,39 +841,59 @@ setupCastListeners() {
         }
       }
 
-      async initShow(showId, episodeId) {
-        if (!showId || !episodeId) {
-          alert('Invalid player parameters');
-          window.history.back();
-          return;
-        }
-
-        try {
-          const response = await fetch('tvshows.json');
-          const data = await response.json();
-          const show = data.find(s => s.id === showId);
-          
-          if (!show) throw new Error('Show not found');
-
-          this.episodes = show.items
-            .filter(i => i.type === 'episode')
-            .sort((a, b) => a.sequence - b.sequence);
-          this.currentEpisode = this.episodes.find(ep => ep.id === episodeId);
-
-          if (!this.currentEpisode) throw new Error('Episode not found');
-
-          this.loadEpisode();
-          this.setupEventListeners();
-          this.setupKeyboardShortcuts();
-          this.setupMobileSupport();
-          this.renderEpisodesList();
-          this.showInitialControls();
-        } catch (error) {
-          console.error('Init error:', error);
-          alert('Failed to load episode');
-          window.history.back();
-        }
-      }
+async initShow(showId, episodeId) {
+  if (!showId || !episodeId) {
+    alert('Invalid player parameters');
+    window.history.back();
+    return;
+  }
+  try {
+    // Load all JSON files in parallel
+    const responses = await Promise.all([
+      fetch('tvshows.json'),
+      fetch('tvshows-part2.json')
+      // Add more parts as needed
+    ]);
+    
+    // Check if all responses are OK
+    if (responses.some(r => !r.ok)) {
+      throw new Error('Failed to load show data');
+    }
+    
+    // Parse all responses
+    const showArrays = await Promise.all(
+      responses.map(response => response.json())
+    );
+    
+    // Combine all arrays
+    const allShows = showArrays.flat();
+    
+    // Find the show
+    const show = allShows.find(s => s.id === showId);
+    
+    if (!show) throw new Error('Show not found');
+    // Store ALL episodes for potential use
+    this.allEpisodes = show.items
+      .filter(i => i.type === 'episode')
+      .sort((a, b) => a.sequence - b.sequence);
+    
+    this.currentEpisode = this.allEpisodes.find(ep => ep.id === episodeId);
+    if (!this.currentEpisode) throw new Error('Episode not found');
+    // Filter episodes for CURRENT SEASON only
+    const currentSeasonId = this.currentEpisode.container?.id;
+    this.episodes = this.allEpisodes.filter(ep => ep.container?.id === currentSeasonId);
+    this.loadEpisode();
+    this.setupEventListeners();
+    this.setupKeyboardShortcuts();
+    this.setupMobileSupport();
+    this.renderEpisodesList();
+    this.showInitialControls();
+  } catch (error) {
+    console.error('Init error:', error);
+    alert('Failed to load episode');
+    window.history.back();
+  }
+}
 
       showInitialControls() {
         setTimeout(() => {
@@ -1781,21 +1802,29 @@ seek(e) {
         }
       }
 
-      playNext() {
-        const currentIndex = this.episodes.findIndex(ep => ep.id === this.currentEpisode.id);
-        if (currentIndex < this.episodes.length - 1) {
-          const nextEpisode = this.episodes[currentIndex + 1];
-          window.location.href = `player.html?showId=${this.showId}&episodeId=${nextEpisode.id}`;
-        }
-      }
+playNext() {
+  const currentIndex = this.episodes.findIndex(ep => ep.id === this.currentEpisode.id);
+  
+  // Check if there's a next episode in the current season
+  if (currentIndex < this.episodes.length - 1) {
+    const nextEpisode = this.episodes[currentIndex + 1];
+    window.location.href = `player.html?showId=${this.showId}&episodeId=${nextEpisode.id}`;
+  } else {
+    // We're at the end of the season
+    // Optionally show a message or do nothing
+    console.log('End of season reached');
+  }
+}
 
-      playPrevious() {
-        const currentIndex = this.episodes.findIndex(ep => ep.id === this.currentEpisode.id);
-        if (currentIndex > 0) {
-          const prevEpisode = this.episodes[currentIndex - 1];
-          window.location.href = `player.html?showId=${this.showId}&episodeId=${prevEpisode.id}`;
-        }
-      }
+playPrevious() {
+  const currentIndex = this.episodes.findIndex(ep => ep.id === this.currentEpisode.id);
+  if (currentIndex > 0) {
+    const prevEpisode = this.episodes[currentIndex - 1];
+    window.location.href = `player.html?showId=${this.showId}&episodeId=${prevEpisode.id}`;
+  } else {
+    console.log('Already at first episode of season');
+  }
+}
 
       updateNavigation() {
         const currentIndex = this.episodes.findIndex(ep => ep.id === this.currentEpisode.id);

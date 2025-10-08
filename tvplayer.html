@@ -1327,47 +1327,58 @@
         this.init();
       }
 
-      async init() {
-        this.showId = new URLSearchParams(window.location.search).get('id');
-        if (!this.showId) {
-          this.showError('No show ID provided');
-          return;
-        }
-
-        try {
-          const response = await fetch('tvshows.json');
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-          
-          const data = await response.json();
-          this.currentShow = data.find(s => s.id === this.showId);
-          
-          if (!this.currentShow) {
-            this.showError('Show not found');
-            return;
-          }
-
-          this.episodes = this.currentShow.items
-            .filter(i => i.type === 'episode')
-            .sort((a, b) => a.sequence - b.sequence);
-
-          if (this.episodes.length === 0) {
-            this.showError('No episodes found for this show');
-            return;
-          }
-
-          this.renderShowDetails();
-          this.renderEpisodes();
-          this.setupEventListeners();
-          this.loadSettings();
-          this.setupShareFeature();
-          this.hideLoading();
-        } catch (error) {
-          console.error('Error loading show:', error);
-          this.showError('Failed to load show data. Please try again.');
-        }
-      }
+async init() {
+  this.showId = new URLSearchParams(window.location.search).get('id');
+  if (!this.showId) {
+    this.showError('No show ID provided');
+    return;
+  }
+  try {
+    // Load all JSON files in parallel
+    const responses = await Promise.all([
+      fetch('tvshows.json'),
+      fetch('tvshows-part2.json')
+      // Add more parts as needed
+    ]);
+    
+    // Check if all responses are OK
+    if (responses.some(r => !r.ok)) {
+      throw new Error('HTTP error! Failed to load show data');
+    }
+    
+    // Parse all responses
+    const showArrays = await Promise.all(
+      responses.map(response => response.json())
+    );
+    
+    // Combine all arrays
+    const allShows = showArrays.flat();
+    
+    // Find the current show
+    this.currentShow = allShows.find(s => s.id === this.showId);
+    
+    if (!this.currentShow) {
+      this.showError('Show not found');
+      return;
+    }
+    this.episodes = this.currentShow.items
+      .filter(i => i.type === 'episode')
+      .sort((a, b) => a.sequence - b.sequence);
+    if (this.episodes.length === 0) {
+      this.showError('No episodes found for this show');
+      return;
+    }
+    this.renderShowDetails();
+    this.renderEpisodes();
+    this.setupEventListeners();
+    this.loadSettings();
+    this.setupShareFeature();
+    this.hideLoading();
+  } catch (error) {
+    console.error('Error loading show:', error);
+    this.showError('Failed to load show data. Please try again.');
+  }
+}
 
       showError(message) {
         const loadingState = document.getElementById('loadingState');

@@ -1068,18 +1068,29 @@
         }
       }
 
-      async loadShows() {
-        try {
-          const response = await fetch('tvshows.json');
-          this.shows = await response.json();
-          this.filteredShows = this.shows;
-        } catch (error) {
-          console.error('Error loading shows:', error);
-          // Fallback to demo data if JSON file not found
-          this.shows = this.getDemoData();
-          this.filteredShows = this.shows;
-        }
-      }
+async loadShows() {
+  try {
+    // Load all JSON files in parallel
+    const responses = await Promise.all([
+      fetch('tvshows.json'),
+	  fetch('tvshows-part2.json')
+      // Add more as needed
+    ]);
+    
+    // Parse all responses
+    const showArrays = await Promise.all(
+      responses.map(response => response.json())
+    );
+    
+    // Combine all arrays
+    this.shows = showArrays.flat();
+    this.filteredShows = this.shows;
+  } catch (error) {
+    console.error('Error loading shows:', error);
+    this.shows = this.getDemoData();
+    this.filteredShows = this.shows;
+  }
+}
 
       getDemoData() {
         return [
