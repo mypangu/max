@@ -165,16 +165,14 @@
     }
 	
 google-cast-launcher {
-  --discovery-button-color: #ffffff;
-  --discovery-button-active-color: #4285f4;
-  --discovery-button-size: 30px;
+  --disconnected-color: #ffffff !important;
+  --connected-color: #ffffff !important;
   display: inline-flex !important;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
-  background: none;     /* optional */
-  border: none;         /* optional */
+  width: 22px;
+  height: 22px;
+  cursor: pointer;
 }
 
     .time-display {
@@ -582,16 +580,49 @@ google-cast-launcher {
   }
 }
 
+google-cast-launcher {
+  --disconnected-color: #ffffff;
+  --connected-color: #ffffff;
+}
+
 @media (max-width: 768px) {
   google-cast-launcher {
-    --discovery-button-size: 25px;
-    width: 25px;
-    height: 25px;
+    --disconnected-color: #ffffff;
+    --connected-color: #ffffff;
+    width: 22px;
+    height: 22px;
   }
 }
 
+/* Force cast button to be white - highest priority */
 google-cast-launcher {
-  --discovery-button-color: #fff !important;
+  --disconnected-color: #ffffff !important;
+  --connected-color: #ffffff !important;
+  color: #ffffff !important;
+  fill: #ffffff !important;
+}
+
+google-cast-launcher svg {
+  fill: #ffffff !important;
+}
+
+google-cast-launcher path {
+  fill: #ffffff !important;
+}
+
+/* When connected, keep it white */
+google-cast-launcher[is-connected] {
+  --connected-color: #ffffff !important;
+  color: #ffffff !important;
+  fill: #ffffff !important;
+}
+
+google-cast-launcher[is-connected] svg {
+  fill: #ffffff !important;
+}
+
+google-cast-launcher[is-connected] path {
+  fill: #ffffff !important;
 }
 
 
@@ -880,64 +911,114 @@ setupCastFramework() {
       autoJoinPolicy: chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED
     });
 
+    // Session state listener
     castContext.addEventListener(
       cast.framework.CastContextEventType.SESSION_STATE_CHANGED,
       (event) => {
+        console.log('Cast session state:', event.sessionState);
+        
         switch (event.sessionState) {
           case cast.framework.SessionState.SESSION_STARTED:
           case cast.framework.SessionState.SESSION_RESUMED:
             this.castSession = castContext.getCurrentSession();
+            console.log('Cast session active');
             this.startCasting();
             break;
+            
+          case cast.framework.SessionState.SESSION_ENDING:
           case cast.framework.SessionState.SESSION_ENDED:
+            console.log('Cast session ended');
             this.castSession = null;
             this.castPlayer = null;
+            
+            // Resume local playback
+            if (this.video.paused) {
+              this.video.play().catch(e => console.log('Resume play failed:', e));
+            }
             break;
         }
       }
     );
     
-    console.log('Cast framework initialized');
+    console.log('Cast framework initialized successfully');
   } catch (error) {
-    console.error('Cast framework error:', error);
+    console.error('Cast framework initialization error:', error);
   }
 }
 
 startCasting() {
   if (!this.castSession) return;
 
+  // Get video URL - prefer MP4 if available, fallback to HLS
   const hlsUrl = this.currentEpisode.stream?.thirdParty?.hlsUrl || 
                  this.currentEpisode.stream?.hls?.high;
+  
   const poster = this.getImageByType(this.currentEpisode.imageInfo, 'bigpic') || '';
   const title = this.currentEpisode.title || `Episode ${this.currentEpisode.sequence || '1'}`;
 
+  // Create media info with proper content type
   const mediaInfo = new chrome.cast.media.MediaInfo(hlsUrl, 'application/x-mpegURL');
   
+  // Set up metadata
   mediaInfo.metadata = new chrome.cast.media.GenericMediaMetadata();
   mediaInfo.metadata.title = title;
+  
   if (poster) {
     mediaInfo.metadata.images = [new chrome.cast.Image(poster)];
   }
 
+  // Stream type for live/VOD
+  mediaInfo.streamType = chrome.cast.media.StreamType.BUFFERED;
+
+  // Create load request
   const request = new chrome.cast.media.LoadRequest(mediaInfo);
-  request.currentTime = this.video.currentTime;
+  request.currentTime = this.video.currentTime || 0;
   request.autoplay = true;
 
+  // Load media to cast device
   this.castSession.loadMedia(request).then(
     () => {
       console.log('Media loaded to Cast device');
+      
+      // Pause local video
       this.video.pause();
+      
+      // Get media session
       this.castPlayer = this.castSession.getMediaSession();
       
-      // Update button icon
-      const castBtn = document.getElementById('castButton');
-      castBtn.querySelector('i').className = 'fas fa-cast';
-      castBtn.style.color = '#4285f4';
+      // Add event listeners for cast player
+      this.castPlayer.addUpdateListener(() => {
+        this.updateCastProgress();
+      });
+      
+      console.log('Cast playback started successfully');
     },
     (errorCode) => {
       console.error('Cast load error:', errorCode);
+      alert('Failed to cast: ' + errorCode);
     }
   );
+}
+
+updateCastProgress() {
+  if (!this.castPlayer) return;
+  
+  const currentTime = this.castPlayer.getEstimatedTime();
+  const duration = this.castPlayer.media?.duration || 0;
+  
+  if (duration > 0) {
+    const percent = (currentTime / duration) * 100;
+    document.getElementById('progressBar').style.width = `${percent}%`;
+    
+    const currentTimeStr = this.formatTime(currentTime);
+    const durationStr = this.formatTime(duration);
+    document.getElementById('timeDisplay').textContent = `${currentTimeStr} / ${durationStr}`;
+  }
+  
+  // Update play/pause button
+  const isPaused = this.castPlayer.playerState === chrome.cast.media.PlayerState.PAUSED;
+  const icon = isPaused ? 'fa-play' : 'fa-pause';
+  document.getElementById('playPauseBtn').innerHTML = `<i class="fas ${icon}"></i>`;
 }	  
 
       async initMovie(movieId) {
@@ -1881,13 +1962,20 @@ document.getElementById('backBtn').onclick = () => {
 
 togglePlay() {
   if (this.castSession && this.castPlayer) {
+    // Control cast playback
+    const controller = new chrome.cast.media.RemotePlayerController(
+      new chrome.cast.media.RemotePlayer()
+    );
+    
     const isPaused = this.castPlayer.playerState === chrome.cast.media.PlayerState.PAUSED;
+    
     if (isPaused) {
-      this.castPlayer.play(new chrome.cast.media.PlayRequest());
+      controller.playOrPause();
     } else {
-      this.castPlayer.pause(new chrome.cast.media.PauseRequest());
+      controller.playOrPause();
     }
   } else {
+    // Control local playback
     if (this.video.paused) {
       this.video.play();
     } else {
@@ -1942,12 +2030,16 @@ seek(e) {
   const percent = (e.clientX - rect.left) / rect.width;
   
   if (this.castPlayer) {
-    const duration = this.castPlayer.duration;
+    const duration = this.castPlayer.media?.duration || 0;
     const seekTime = percent * duration;
-    this.castPlayer.currentTime = seekTime;
+    
     const request = new chrome.cast.media.SeekRequest();
     request.currentTime = seekTime;
-    this.castSession.getMediaSession().seek(request);
+    
+    this.castSession.getMediaSession().seek(request,
+      () => console.log('Seek successful'),
+      (error) => console.error('Seek failed:', error)
+    );
   } else {
     this.video.currentTime = percent * this.video.duration;
   }
